@@ -1,0 +1,81 @@
+import React from "react";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { AuthProvider } from "./contexts/AuthContext";
+import { useParams } from "react-router-dom";
+
+// Pages
+import HomePage from "./pages/HomePage";
+import LoginPage from "./pages/LoginPage";
+import RegisterPage from "./pages/RegisterPage";
+import CoursesPage from "./pages/CoursesPage";
+import CourseDetailPage from "./pages/CourseDetailPage";
+
+// Components - Student
+import StudentDashboard from "./components/student/Dashboard";
+import VideoPlayer from "./components/courses/VideoPlayer";
+
+// Components - Admin
+import AdminDashboard from "./components/admin/AdminDashboard";
+
+// Common Components
+import ProtectedRoute from "./components/common/ProtectedRoute";
+import Navbar from "./components/common/Navbar";
+import ScrollToTop from "./components/common/ScrollToTop";
+
+const App: React.FC = () => {
+  return (
+    <BrowserRouter>
+      <ScrollToTop />
+      <Navbar />
+      <AuthProvider>
+        <Routes>
+          {/* ============================================ */}
+          {/* PUBLIC ROUTES */}
+          {/* ============================================ */}
+          <Route path="/" element={<HomePage />} />
+          <Route path="/login" element={<LoginPage />} />
+          <Route path="/register" element={<RegisterPage />} />
+          <Route path="/courses" element={<CoursesPage />} />
+          <Route path="/courses/:slug" element={<CourseDetailPage />} />
+          {/* ============================================ */}
+          {/* PROTECTED STUDENT ROUTES */}
+          {/* ============================================ */}
+          <Route
+            path="/dashboard"
+            element={
+              <ProtectedRoute>
+                <StudentDashboard />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/learn/:courseId/:moduleId/:lessonId"
+            element={
+              <ProtectedRoute>
+                <VideoPlayer />
+              </ProtectedRoute>
+            }
+          />
+          {/* ============================================ */}
+          {/* PROTECTED ADMIN ROUTES */}
+          {/* ============================================ */}
+          <Route
+            path="/admin"
+            element={
+              <ProtectedRoute requiredRole="admin">
+                <AdminDashboard />
+              </ProtectedRoute>
+            }
+          />
+          {/* ============================================ */}
+          {/* FALLBACK - REDIRECT TO HOME */}
+          {/* ============================================ */}
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
+      </AuthProvider>
+    </BrowserRouter>
+  );
+};
+
+export default App;
