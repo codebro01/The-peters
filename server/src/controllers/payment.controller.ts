@@ -32,10 +32,9 @@ export const initializePayment = async (
     const existingEnrollment = await Enrollment.findOne({
       userId,
       courseId,
-      paymentStatus: "completed",
     });
 
-    if (existingEnrollment) {
+    if (existingEnrollment && existingEnrollment.paymentStatus === "completed") {
       res.status(400).json({
         success: false,
         message: "You are already enrolled in this course",
@@ -86,14 +85,20 @@ export const initializePayment = async (
       },
     });
 
-    // Create pending enrollment
-    await Enrollment.create({
-      userId,
-      courseId,
-      paymentStatus: "pending",
-      paymentReference: reference,
-      amountPaid: 0,
-    });
+    // Create or update pending enrollment
+    if (existingEnrollment) {
+      existingEnrollment.paymentStatus = "pending";
+      existingEnrollment.paymentReference = reference;
+      await existingEnrollment.save();
+    } else {
+      await Enrollment.create({
+        userId,
+        courseId,
+        paymentStatus: "pending",
+        paymentReference: reference,
+        amountPaid: 0,
+      });
+    }
 
     res.status(200).json({
       success: true,

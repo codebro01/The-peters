@@ -10,6 +10,8 @@ import RegisterPage from "./pages/RegisterPage";
 import CoursesPage from "./pages/CoursesPage";
 import CourseDetailPage from "./pages/CourseDetailPage";
 import VerifyPaymentPage from "./pages/VerifyPaymentPage";
+import ConsultationBooking from "./components/consultation/ConsultationBooking";
+import ConsultationVerify from "./components/consultation/ConsultationVerify";
 
 // Components - Student
 import StudentDashboard from "./components/student/Dashboard";
@@ -41,6 +43,11 @@ const App: React.FC = () => {
           <Route
             path="/verify-payment/:reference"
             element={<VerifyPaymentPage />}
+          />
+          <Route path="/consultation" element={<ConsultationBooking />} />
+          <Route
+            path="/consultation-verify/:reference"
+            element={<ConsultationVerify />}
           />
           {/* ============================================ */}
           {/* PROTECTED STUDENT ROUTES */}

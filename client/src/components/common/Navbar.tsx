@@ -18,6 +18,7 @@ export default function Navbar() {
     navigate("/");
   };
 
+  
   return (
     <nav className="fixed w-full z-50 bg-white shadow-sm">
       <div className="max-w-7xl mx-auto px-4">

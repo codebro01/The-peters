@@ -46,20 +46,21 @@ export const usePaystack = () => {
             },
           ],
         },
-        callback: async (response: any) => {
+        callback: function (response: any) {
           // Payment successful
-          try {
-            setIsProcessing(true);
-            await paymentService.verifyPayment(response.reference);
-            setIsProcessing(false);
-            onSuccess();
-          } catch (error) {
-            console.error("Payment verification failed:", error);
-            setIsProcessing(false);
-            alert("Payment verification failed. Please contact support.");
-          }
+          setIsProcessing(true);
+          paymentService.verifyPayment(response.reference)
+            .then(() => {
+              setIsProcessing(false);
+              onSuccess();
+            })
+            .catch((error) => {
+              console.error("Payment verification failed:", error);
+              setIsProcessing(false);
+              alert("Payment verification failed. Please contact support.");
+            });
         },
-        onClose: () => {
+        onClose: function () {
           setIsProcessing(false);
           onClose();
         },
@@ -69,7 +70,9 @@ export const usePaystack = () => {
     } catch (error: any) {
       console.error("Payment initialization failed:", error);
       setIsProcessing(false);
-      alert(error.message || "Failed to initialize payment");
+      console.log(error);
+      const errorMessage = error.response?.data?.message || error.message || "Failed to initialize payment";
+      alert(errorMessage);
     }
   };
 

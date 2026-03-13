@@ -120,7 +120,7 @@ export default function PetersAgricultureLanding() {
                 <button className="px-8 py-4 bg-gradient-to-r from-emerald-600 to-emerald-700 text-white rounded-lg hover:from-emerald-700 hover:to-emerald-800 transition flex items-center font-semibold text-lg shadow-xl shadow-emerald-200">
                   Get Started <ChevronRight className="ml-2" size={24} />
                 </button>
-                <button className="px-8 py-4 border-2 border-orange-600 text-orange-600 rounded-lg hover:bg-orange-50 transition font-semibold text-lg">
+                <button onClick={() => navigate("/consultation")} className="px-8 py-4 border-2 border-orange-600 text-orange-600 rounded-lg hover:bg-orange-50 transition font-semibold text-lg">
                   Book a Consultation
                 </button>
               </div>
@@ -381,7 +381,7 @@ export default function PetersAgricultureLanding() {
                   <span>Business planning and scaling support</span>
                 </div>
               </div>
-              <button className="w-full px-6 py-3 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition font-semibold flex items-center justify-center">
+              <button onClick={() => navigate("/consultation")} className="w-full px-6 py-3 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition font-semibold flex items-center justify-center">
                 Book a Consultation <ArrowRight className="ml-2" size={20} />
               </button>
             </div>
@@ -704,7 +704,7 @@ export default function PetersAgricultureLanding() {
             >
               Start Learning Today
             </button>
-            <button className="px-8 py-4 bg-gradient-to-r from-orange-600 to-orange-700 text-white rounded-lg hover:from-orange-700 hover:to-orange-800 transition font-semibold text-lg shadow-xl shadow-orange-200">
+            <button onClick={() => navigate("/consultation")} className="px-8 py-4 bg-gradient-to-r from-orange-600 to-orange-700 text-white rounded-lg hover:from-orange-700 hover:to-orange-800 transition font-semibold text-lg shadow-xl shadow-orange-200">
               Book a Consultation
             </button>
             <button className="px-8 py-4 border-2 border-emerald-600 text-emerald-600 rounded-lg hover:bg-emerald-50 transition font-semibold text-lg">

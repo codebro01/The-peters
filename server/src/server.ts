@@ -13,6 +13,7 @@ import courseRoutes from "./routes/course.routes";
 import paymentRoutes from "./routes/payment.routes";
 import enrollmentRoutes from "./routes/enrollment.routes";
 import adminRoutes from "./routes/admin.routes";
+import consultationRoutes from "./routes/consultation.routes";
 
 // Initialize express app
 const app: Application = express();
@@ -24,8 +25,8 @@ connectDB();
 app.use(
   cors({
     origin: [
-      process.env.CLIENT_URL || "http://localhost:3000",
-      "http://localhost:3000",
+      process.env.CLIENT_URL || "http://localhost:4000",
+      "http://localhost:4000",
       "http://localhost:3001",
       "http://localhost:3002",
     ],
@@ -59,6 +60,7 @@ app.use("/api/payments", paymentRoutes);
 app.use("/api/enrollments", enrollmentRoutes);
 app.use("/api/admin", adminRoutes);
 app.use("/api/videos", videoRoutes);
+app.use("/api/consultations", consultationRoutes);
 
 // 404 handler
 app.use((req: Request, res: Response) => {
