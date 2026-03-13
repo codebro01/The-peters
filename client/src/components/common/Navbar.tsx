@@ -1,18 +1,21 @@
 import { useState } from "react";
 import { Menu, X, UserCircle } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import logo from "../../assets/images/THE PETERS LOGO.png";
+import { useAuth } from "../../hooks/useAuth";
 
 export default function Navbar() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const { isAuthenticated, user, logout } = useAuth();
+  const navigate = useNavigate();
 
-  // 🔐 AUTH STATE (replace later with real auth)
-  const isAuthenticated = false; // change to true to test
-  const userName = "Tosin";
+  console.log(user, isAuthenticated)
 
-  const handleLogout = () => {
-    // later: clear token, context, etc
-    console.log("Logged out");
+  const userName = user?.firstName ? `${user.firstName} ${user.lastName || ''}`.trim() : "User";
+
+  const handleLogout = async () => {
+    await logout();
+    navigate("/");
   };
 
   return (
@@ -53,11 +56,14 @@ export default function Navbar() {
           <div className="hidden lg:flex items-center space-x-3">
             {!isAuthenticated ? (
               <>
-                <button className="px-5 py-2.5 text-emerald-600 hover:bg-emerald-50 rounded-lg font-medium">
-                  Sign In
-                </button>
                 <Link
-                  to="/courses"
+                  to="/login"
+                  className="px-5 py-2.5 text-emerald-600 hover:bg-emerald-50 rounded-lg font-medium"
+                >
+                  Sign In
+                </Link>
+                <Link
+                  to="/register"
                   className="px-5 py-2.5 bg-gradient-to-r from-emerald-600 to-emerald-700 text-white rounded-lg font-medium shadow-lg"
                 >
                   Get Started
@@ -111,11 +117,14 @@ export default function Navbar() {
 
             {!isAuthenticated ? (
               <>
-                <button className="w-full px-4 py-3 text-emerald-600 border-2 border-emerald-600 rounded-lg font-medium">
-                  Sign In
-                </button>
                 <Link
-                  to="/courses"
+                  to="/login"
+                  className="block text-center w-full px-4 py-3 text-emerald-600 border-2 border-emerald-600 rounded-lg font-medium"
+                >
+                  Sign In
+                </Link>
+                <Link
+                  to="/register"
                   className="block text-center w-full px-4 py-3 bg-emerald-600 text-white rounded-lg font-medium"
                 >
                   Get Started

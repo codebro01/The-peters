@@ -9,6 +9,7 @@ import LoginPage from "./pages/LoginPage";
 import RegisterPage from "./pages/RegisterPage";
 import CoursesPage from "./pages/CoursesPage";
 import CourseDetailPage from "./pages/CourseDetailPage";
+import VerifyPaymentPage from "./pages/VerifyPaymentPage";
 
 // Components - Student
 import StudentDashboard from "./components/student/Dashboard";
@@ -26,8 +27,8 @@ const App: React.FC = () => {
   return (
     <BrowserRouter>
       <ScrollToTop />
-      <Navbar />
       <AuthProvider>
+        <Navbar />
         <Routes>
           {/* ============================================ */}
           {/* PUBLIC ROUTES */}
@@ -37,6 +38,10 @@ const App: React.FC = () => {
           <Route path="/register" element={<RegisterPage />} />
           <Route path="/courses" element={<CoursesPage />} />
           <Route path="/courses/:slug" element={<CourseDetailPage />} />
+          <Route
+            path="/verify-payment/:reference"
+            element={<VerifyPaymentPage />}
+          />
           {/* ============================================ */}
           {/* PROTECTED STUDENT ROUTES */}
           {/* ============================================ */}

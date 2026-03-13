@@ -12,16 +12,19 @@ class AuthService {
    * Register a new user
    */
   async register(data: RegisterData): Promise<AuthResponse> {
-    const response = await api.post<ApiResponse<AuthResponse>>(
+    const response = await api.post<ApiResponse<User>>(
       "/auth/register",
       data
     );
 
-    if (response.data.success && response.data.data) {
+    if (response.data.success && response.data.data && response.data.token) {
       // Save token and user to localStorage
-      localStorage.setItem("token", response.data.data.token);
-      localStorage.setItem("user", JSON.stringify(response.data.data.user));
-      return response.data.data;
+      localStorage.setItem("token", response.data.token);
+      localStorage.setItem("user", JSON.stringify(response.data.data));
+      return {
+        user: response.data.data,
+        token: response.data.token
+      };
     }
 
     throw new Error(response.data.message || "Registration failed");
@@ -31,16 +34,19 @@ class AuthService {
    * Login user
    */
   async login(credentials: LoginCredentials): Promise<AuthResponse> {
-    const response = await api.post<ApiResponse<AuthResponse>>(
+    const response = await api.post<ApiResponse<User>>(
       "/auth/login",
       credentials
     );
 
-    if (response.data.success && response.data.data) {
+    if (response.data.success && response.data.data && response.data.token) {
       // Save token and user to localStorage
-      localStorage.setItem("token", response.data.data.token);
-      localStorage.setItem("user", JSON.stringify(response.data.data.user));
-      return response.data.data;
+      localStorage.setItem("token", response.data.token);
+      localStorage.setItem("user", JSON.stringify(response.data.data));
+      return {
+        user: response.data.data,
+        token: response.data.token
+      };
     }
 
     throw new Error(response.data.message || "Login failed");
@@ -82,6 +88,8 @@ class AuthService {
    */
   isAuthenticated(): boolean {
     const token = localStorage.getItem("token");
+
+    console.log('token', token)
     return !!token;
   }
 

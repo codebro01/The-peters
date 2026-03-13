@@ -1,16 +1,17 @@
 import express from "express";
 import {
   getMyEnrollments,
+  getEnrollment,
   updateProgress,
   submitQuizResult,
 } from "../controllers/enrollment.controller";
 import { protect } from "../middleware/auth.middleware";
-//import { checkDeviceSession } from "../middleware/deviceSession.middleware";
 
 const router = express.Router();
 
-//router.get("/", protect, checkDeviceSession, getMyEnrollments);
-//router.put("/:id/progress", protect, checkDeviceSession, updateProgress);
-//router.post("/:id/quiz", protect, checkDeviceSession, submitQuizResult);
+router.get("/", protect, getMyEnrollments);
+router.get("/:id", protect, getEnrollment);
+router.put("/:id/progress", protect, updateProgress);
+router.post("/:id/quiz", protect, submitQuizResult);
 
 export default router;

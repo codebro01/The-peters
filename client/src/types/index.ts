@@ -87,6 +87,10 @@ export interface Course {
     count: number;
   };
   enrollmentCount: number;
+  previewVideo?: {
+    url: string;
+    publicId: string;
+  };
   isPublished: boolean;
   createdAt: string;
   updatedAt: string;
@@ -170,6 +174,7 @@ export interface QuizResult {
 export interface ApiResponse<T> {
   success: boolean;
   data?: T;
+  token: string | null;
   message?: string;
   error?: string;
   count?: number;

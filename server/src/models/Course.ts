@@ -73,6 +73,10 @@ export interface ICourse extends Document {
     count: number;
   };
   enrollmentCount: number;
+  previewVideo?: {
+    url: string;
+    publicId: string;
+  };
   isPublished: boolean;
   lastUpdated: Date;
 }
@@ -178,6 +182,11 @@ const CourseSchema = new Schema<ICourse>(
     },
 
     enrollmentCount: { type: Number, default: 0 },
+    previewVideo: {
+      url: String,
+      publicId: String,
+    },
+
     isPublished: { type: Boolean, default: false },
 
     lastUpdated: { type: Date, default: Date.now },

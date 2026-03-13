@@ -244,7 +244,7 @@ export default function CourseDetailPage() {
     );
   }
 
-  const totalVideoDuration = getTotalDuration();
+  const totalVideoDuration = getTotalVideoDuration();
   const videoCount = getVideoCount();
 
   return (
@@ -265,12 +265,30 @@ export default function CourseDetailPage() {
                 <X className="w-6 h-6" />
               </button>
             </div>
-            <div className="p-4">
-              <VideoPlayer
-                courseId={selectedLesson.courseId}
-                moduleId={selectedLesson.moduleId}
-                lessonId={selectedLesson.lessonId}
-              />
+            <div className="aspect-video bg-black">
+              <video
+                className="w-full h-full"
+                controls
+                autoPlay
+                controlsList="nodownload"
+                poster={course.thumbnail?.url}
+                src={(() => {
+                  // Find the lesson's video URL, fallback to placeholder
+                  const mod = course.modules.find(
+                    (m) => m.id === selectedLesson.moduleId
+                  );
+                  const lesson = mod?.lessons.find(
+                    (l) => l.id === selectedLesson.lessonId
+                  );
+                  return (
+                    lesson?.content?.video?.url ||
+                    course.previewVideo?.url ||
+                    PLACEHOLDER_PREVIEW_URL
+                  );
+                })()}
+              >
+                Your browser does not support the video tag.
+              </video>
             </div>
           </div>
         </div>
@@ -377,13 +395,12 @@ export default function CourseDetailPage() {
             {/* Course Card */}
             <div className="lg:col-span-1">
               <div className="bg-white rounded-xl shadow-2xl overflow-hidden sticky top-4">
-                {course.thumbnail?.url && (
-                  <div className="aspect-video relative">
-                    <img
-                      src={course.thumbnail.url}
-                      alt={course.title}
-                      className="w-full h-full object-cover"
-                    />
+                <div className="aspect-video relative">
+                  <img
+                    src={course.thumbnail?.url || "https://images.unsplash.com/photo-1592982537447-6f2a6a0a38f3?q=80&w=1000&auto=format&fit=crop"}
+                    alt={course.title}
+                    className="w-full h-full object-cover"
+                  />
                     <div className="absolute inset-0 bg-black bg-opacity-20 flex items-center justify-center">
                       <button
                         onClick={() => {
@@ -400,7 +417,6 @@ export default function CourseDetailPage() {
                       </button>
                     </div>
                   </div>
-                )}
 
                 <div className="p-6">
                   <div className="text-3xl font-bold text-gray-900 mb-2">
@@ -913,9 +929,11 @@ export default function CourseDetailPage() {
   );
 }
 
-// Helper functions
+// Placeholder preview video
+const PLACEHOLDER_PREVIEW_URL =
+  "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4";
+
 function getTotalDuration() {
-  // This should be calculated from the actual course data
   return 0;
 }
 

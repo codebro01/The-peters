@@ -48,9 +48,9 @@ export const getCourses = async (req: AuthenticatedRequest, res: Response) => {
     if (req.user) {
       const userId = req.user._id;
       const enrolledCourseIds = await Enrollment.find({
-        student: userId,
-        status: "active",
-      }).distinct("course");
+        userId: userId,
+        paymentStatus: "completed",
+      }).distinct("courseId");
 
       coursesWithEnrollment = courses.map((course) => {
         const courseObj = course.toObject();
@@ -107,9 +107,9 @@ export const getCourseBySlug = async (
     let isEnrolled = false;
     if (req.user) {
       const enrollment = await Enrollment.findOne({
-        student: req.user._id,
-        course: course._id,
-        status: "active",
+        userId: req.user._id,
+        courseId: course._id,
+        paymentStatus: "completed",
       });
       isEnrolled = !!enrollment;
     }
@@ -322,11 +322,11 @@ export const getEnrolledCourses = async (
 
     // Get enrollments
     const enrollments = await Enrollment.find({
-      student: userId,
-      status: "active",
-    }).populate("course");
+      userId: userId,
+      paymentStatus: "completed",
+    }).populate("courseId");
 
-    const courses = enrollments.map((enrollment: any) => enrollment.course);
+    const courses = enrollments.map((enrollment: any) => enrollment.courseId);
 
     res.status(200).json({
       success: true,
@@ -338,6 +338,50 @@ export const getEnrolledCourses = async (
     res.status(500).json({
       success: false,
       message: error.message || "Failed to fetch enrolled courses",
+    });
+  }
+};
+
+// @desc    Get single course by ID
+// @route   GET /api/courses/id/:id
+// @access  Public
+export const getCourseById = async (
+  req: AuthenticatedRequest,
+  res: Response
+) => {
+  try {
+    const course = await Course.findById(req.params.id);
+
+    if (!course) {
+      return res.status(404).json({
+        success: false,
+        message: "Course not found",
+      });
+    }
+
+    // Check if user is enrolled
+    let isEnrolled = false;
+    if (req.user) {
+      const enrollment = await Enrollment.findOne({
+        userId: req.user._id,
+        courseId: course._id,
+        paymentStatus: "completed",
+      });
+      isEnrolled = !!enrollment;
+    }
+
+    res.status(200).json({
+      success: true,
+      data: {
+        course,
+        isEnrolled,
+      },
+    });
+  } catch (error: any) {
+    console.error("Get course by ID error:", error);
+    res.status(500).json({
+      success: false,
+      message: error.message || "Failed to fetch course",
     });
   }
 };

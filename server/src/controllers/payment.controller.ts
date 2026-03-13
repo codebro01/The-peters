@@ -1,16 +1,17 @@
-import { Request, Response } from "express";
+import { Response } from "express";
 import axios from "axios";
 import crypto from "crypto";
 import { v4 as uuidv4 } from "uuid";
 import Payment from "../models/Payment";
 import Enrollment from "../models/Enrollment";
 import Course from "../models/Course";
+import { AuthenticatedRequest } from "../middleware/auth.middleware";
 
 // @desc    Initialize payment with Paystack
 // @route   POST /api/payments/initialize
 // @access  Private
 export const initializePayment = async (
-  req: Request,
+  req: AuthenticatedRequest,
   res: Response
 ): Promise<void> => {
   try {
@@ -120,7 +121,7 @@ export const initializePayment = async (
 // @route   GET /api/payments/verify/:reference
 // @access  Public (will be called by Paystack)
 export const verifyPayment = async (
-  req: Request,
+  req: AuthenticatedRequest,
   res: Response
 ): Promise<void> => {
   try {
@@ -218,7 +219,7 @@ export const verifyPayment = async (
 // @route   POST /api/payments/webhook
 // @access  Public (Paystack only)
 export const paystackWebhook = async (
-  req: Request,
+  req: AuthenticatedRequest,
   res: Response
 ): Promise<void> => {
   try {
@@ -280,7 +281,7 @@ export const paystackWebhook = async (
 // @route   GET /api/payments/history
 // @access  Private
 export const getPaymentHistory = async (
-  req: Request,
+  req: AuthenticatedRequest,
   res: Response
 ): Promise<void> => {
   try {

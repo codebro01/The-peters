@@ -1,12 +1,13 @@
-import { Request, Response } from "express";
+import { Response } from "express";
 import Enrollment from "../models/Enrollment";
 import Course from "../models/Course";
+import { AuthenticatedRequest } from "../middleware/auth.middleware";
 
 // @desc    Get user enrollments
 // @route   GET /api/enrollments
 // @access  Private
 export const getMyEnrollments = async (
-  req: Request,
+  req: AuthenticatedRequest,
   res: Response
 ): Promise<void> => {
   try {
@@ -34,7 +35,7 @@ export const getMyEnrollments = async (
 // @route   GET /api/enrollments/:id
 // @access  Private
 export const getEnrollment = async (
-  req: Request,
+  req: AuthenticatedRequest,
   res: Response
 ): Promise<void> => {
   try {
@@ -67,7 +68,7 @@ export const getEnrollment = async (
 // @route   PUT /api/enrollments/:id/progress
 // @access  Private
 export const updateProgress = async (
-  req: Request,
+  req: AuthenticatedRequest,
   res: Response
 ): Promise<void> => {
   try {
@@ -155,7 +156,7 @@ export const updateProgress = async (
 // @route   POST /api/enrollments/:id/quiz
 // @access  Private
 export const submitQuizResult = async (
-  req: Request,
+  req: AuthenticatedRequest,
   res: Response
 ): Promise<void> => {
   try {
@@ -209,7 +210,7 @@ export const submitQuizResult = async (
 // @route   GET /api/enrollments/:id/certificate
 // @access  Private
 export const getCertificate = async (
-  req: Request,
+  req: AuthenticatedRequest,
   res: Response
 ): Promise<void> => {
   try {

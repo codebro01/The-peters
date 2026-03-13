@@ -38,6 +38,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
         try {
           // Verify token is still valid by fetching current user
           const currentUser = await authService.getCurrentUser();
+
+          console.log('currentUser', currentUser)
           setUser(currentUser);
         } catch (error) {
           // Token is invalid, clear everything
@@ -54,6 +56,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
 
   const login = async (email: string, password: string) => {
     const response = await authService.login({ email, password });
+
+    console.log('login auth respo', response)
     setUser(response.user);
   };
 

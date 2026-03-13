@@ -20,7 +20,8 @@ const LoginPage: React.FC = () => {
 
     try {
       await login(email, password);
-      navigate("/dashboard");
+      console.log('login successful')
+      navigate("/courses");
     } catch (err: any) {
       setError(err.message || "Login failed. Please try again.");
     } finally {

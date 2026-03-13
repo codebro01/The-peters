@@ -22,7 +22,7 @@ const sendTokenResponse = (user: any, statusCode: number, res: Response) => {
   const options = {
     expires: new Date(
       Date.now() +
-        parseInt(process.env.JWT_COOKIE_EXPIRE || "30") * 24 * 60 * 60 * 1000
+      parseInt(process.env.JWT_COOKIE_EXPIRE || "30") * 24 * 60 * 60 * 1000
     ),
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
@@ -137,6 +137,8 @@ export const login = async (req: Request, res: Response) => {
     await User.findByIdAndUpdate(user._id, { lastLogin: new Date() });
 
     // Send token response
+
+    console.log("Login successful");
     sendTokenResponse(user, 200, res);
   } catch (error: any) {
     console.error("Login error:", error);

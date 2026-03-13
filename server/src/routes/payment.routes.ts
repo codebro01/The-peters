@@ -10,7 +10,7 @@ import { protect } from "../middleware/auth.middleware";
 
 const router = express.Router();
 
-//router.post("/initialize", protect, checkDeviceSession, initializePayment);
+router.post("/initialize", protect, initializePayment);
 router.get("/verify/:reference", verifyPayment);
 router.post("/webhook", paystackWebhook);
 router.get("/history", protect, getPaymentHistory);

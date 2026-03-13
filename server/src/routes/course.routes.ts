@@ -3,6 +3,7 @@ import express from "express";
 import {
   getCourses,
   getCourseBySlug,
+  getCourseById,
   createCourse,
   updateCourse,
   deleteCourse,
@@ -19,35 +20,40 @@ const router = express.Router();
 
 // Public routes
 router.get("/", getCourses);
-router.get("/:slug", getCourseBySlug);
-
-// Protected routes with device session tracking
-router.get(
-  "/instructor/my-courses",
-  protect,
-  authorize("instructor", "admin"),
-  trackDeviceSession, // Use trackDeviceSession
-  validateDeviceSession, // Use validateDeviceSession
-  getInstructorCourses,
-);
-
-router.get(
-  "/enrolled",
-  protect,
-  trackDeviceSession, // Use trackDeviceSession
-  validateDeviceSession, // Use validateDeviceSession
-  getEnrolledCourses,
-);
 
 // Admin/Instructor routes with device session tracking
 router.post(
   "/",
   protect,
   authorize("admin", "instructor"),
-  trackDeviceSession, // Use trackDeviceSession
-  validateDeviceSession, // Use validateDeviceSession
+  trackDeviceSession,
+  validateDeviceSession,
   createCourse,
 );
+
+// Protected routes with device session tracking
+router.get(
+  "/instructor/my-courses",
+  protect,
+  authorize("instructor", "admin"),
+  trackDeviceSession,
+  validateDeviceSession,
+  getInstructorCourses,
+);
+
+router.get(
+  "/enrolled",
+  protect,
+  trackDeviceSession,
+  validateDeviceSession,
+  getEnrolledCourses,
+);
+
+// Course by ID (must come before /:slug)
+router.get("/id/:id", getCourseById);
+
+// Course by slug (public, must be last)
+router.get("/:slug", getCourseBySlug);
 
 router.put(
   "/:id",

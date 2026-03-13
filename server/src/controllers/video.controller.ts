@@ -226,9 +226,9 @@ export const getVideoStreamUrl = async (
 
     if (userId) {
       const enrollment = await Enrollment.findOne({
-        student: userId,
-        course: courseId,
-        status: "active",
+        userId: userId,
+        courseId: courseId,
+        paymentStatus: "completed",
       });
       isEnrolled = !!enrollment;
     }
