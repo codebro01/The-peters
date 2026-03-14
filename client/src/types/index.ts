@@ -37,6 +37,7 @@ export interface Lesson {
       url: string;
       publicId: string;
       duration: number;
+      thumbnail?: string;
     };
     document?: {
       url: string;

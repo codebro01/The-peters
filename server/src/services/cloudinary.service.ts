@@ -57,6 +57,7 @@ class CloudinaryService {
           public_id: filename.split(".")[0],
           overwrite: true,
           format: "pdf",
+          access_mode: "public",
         },
         (
           error: UploadApiErrorResponse | undefined,
