@@ -10,7 +10,7 @@ import {
   getInstructorCourses,
   getEnrolledCourses,
 } from "../controllers/course.controller";
-import { protect, authorize } from "../middleware/auth.middleware";
+import { protect, authorize, validateToken } from "../middleware/auth.middleware";
 import {
   trackDeviceSession,
   validateDeviceSession,
@@ -52,8 +52,8 @@ router.get(
 // Course by ID (must come before /:slug)
 router.get("/id/:id", getCourseById);
 
-// Course by slug (public, must be last)
-router.get("/:slug", getCourseBySlug);
+// Course by slug (public, but check for user enrollment if token provided)
+router.get("/:slug", validateToken, getCourseBySlug);
 
 router.put(
   "/:id",

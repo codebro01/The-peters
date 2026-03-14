@@ -57,6 +57,8 @@ export default function CourseLearning() {
       }
 
       const data = await courseService.getCourseBySlug(slug);
+
+      console.log(data)
       setCourse(data.course);
       setIsEnrolled(data.isEnrolled);
 
@@ -95,6 +97,8 @@ export default function CourseLearning() {
       setIsLoading(false);
     }
   };
+
+  console.log('course', course)
 
   const selectLesson = async (module: Module, lesson: Lesson, currentCourseId?: string) => {
     const cid = currentCourseId || course?._id;

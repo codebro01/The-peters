@@ -1,5 +1,6 @@
 // server/src/controllers/course.controller.ts
 import { Response } from "express";
+import mongoose from "mongoose";
 import { AuthenticatedRequest } from "../middleware/auth.middleware";
 import Course from "../models/Course";
 import Enrollment from "../models/Enrollment";
@@ -94,7 +95,12 @@ export const getCourseBySlug = async (
   res: Response
 ) => {
   try {
-    const course = await Course.findOne({ slug: req.params.slug });
+    let course = await Course.findOne({ slug: req.params.slug });
+
+    // Fallback search by ID if slug find fails and params.slug is a valid ObjectId
+    if (!course && mongoose.Types.ObjectId.isValid(req.params.slug)) {
+      course = await Course.findById(req.params.slug);
+    }
 
     if (!course) {
       return res.status(404).json({
