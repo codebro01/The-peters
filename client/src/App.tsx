@@ -15,7 +15,7 @@ import ConsultationVerify from "./components/consultation/ConsultationVerify";
 
 // Components - Student
 import StudentDashboard from "./components/student/Dashboard";
-import VideoPlayer from "./components/courses/VideoPlayer";
+import CourseLearning from "./components/courses/CourseLearning";
 
 // Components - Admin
 import AdminDashboard from "./components/admin/AdminDashboard";
@@ -62,10 +62,10 @@ const App: React.FC = () => {
           />
 
           <Route
-            path="/learn/:courseId/:moduleId/:lessonId"
+            path="/learn/:slug"
             element={
               <ProtectedRoute>
-                <VideoPlayer />
+                <CourseLearning />
               </ProtectedRoute>
             }
           />

@@ -26,7 +26,6 @@ import { usePaystack } from "../../hooks/usePaystack";
 import courseService from "../../services/course.service";
 import videoService from "../../services/video.service";
 import { Course, Lesson } from "../../types";
-import VideoPlayer from "./VideoPlayer";
 
 export default function CourseDetailPage() {
   const { slug } = useParams<{ slug: string }>();
@@ -161,12 +160,7 @@ export default function CourseDetailPage() {
   const startLearning = () => {
     if (!course || !isEnrolled) return;
 
-    const firstModule = course.modules[0];
-    const firstLesson = firstModule?.lessons[0];
-
-    if (firstModule && firstLesson) {
-      navigate(`/learn/${course._id}/${firstModule.id}/${firstLesson.id}`);
-    }
+    navigate(`/learn/${course.slug}`);
   };
 
   const getTotalVideoDuration = () => {

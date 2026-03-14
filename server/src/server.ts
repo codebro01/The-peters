@@ -1,11 +1,11 @@
-import express, { Application, Request, Response } from "express";
 import dotenv from "dotenv";
+// Load environment variables FIRST, before any imports that depend on them
+dotenv.config();
+
+import express, { Application, Request, Response } from "express";
 import cors from "cors";
 import connectDB from "./config/database";
 import videoRoutes from "./routes/video.routes";
-
-// Load environment variables
-dotenv.config();
 
 // Import routes
 import authRoutes from "./routes/auth.routes";
@@ -33,8 +33,8 @@ app.use(
     credentials: true,
   })
 );
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+app.use(express.json({ limit: '50mb' }));
+app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 
 // Request logging middleware (development only)
 if (process.env.NODE_ENV === "development") {

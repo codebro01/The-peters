@@ -145,6 +145,8 @@ export const verifyConsultation = async (
 
       await consultation.save();
 
+      console.log('consultantion', consultation)
+
       // Send Confirmation Email
       if (consultation.meetingLink) {
         await sendConsultationConfirmation(

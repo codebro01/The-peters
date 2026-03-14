@@ -39,6 +39,153 @@ const upload = multer({
   },
 });
 
+// Configure multer for document upload
+const documentUpload = multer({
+  storage,
+  limits: {
+    fileSize: 20 * 1024 * 1024, // 20MB limit for documents
+  },
+  fileFilter: (req, file, cb) => {
+    const allowedMimeTypes = [
+      "application/pdf",
+    ];
+
+    if (allowedMimeTypes.includes(file.mimetype)) {
+      cb(null, true);
+    } else {
+      cb(
+        new Error(
+          `Unsupported file type: ${file.mimetype}. Only PDF files are allowed.`
+        )
+      );
+    }
+  },
+});
+
+// @desc    Upload PDF document to Cloudinary and add to lesson
+// @route   POST /api/videos/upload-document/:courseId/:moduleId/:lessonId
+// @access  Private/Admin
+export const uploadDocumentToLesson = [
+  documentUpload.single("document"),
+  async (req: Request, res: Response) => {
+    try {
+      const { courseId, moduleId, lessonId } = req.params;
+
+      if (!req.file) {
+        return res.status(400).json({
+          success: false,
+          message: "No document file provided",
+        });
+      }
+
+      console.log(
+        `Uploading document: ${req.file.originalname}, Size: ${req.file.size} bytes`
+      );
+
+      // Find the course
+      const course = await Course.findById(courseId);
+      if (!course) {
+        return res.status(404).json({
+          success: false,
+          message: "Course not found",
+        });
+      }
+
+      // Find the module
+      const module = course.modules.find((m: any) => m.id === moduleId || (m.toObject && m.toObject().id === moduleId));
+      if (!module) {
+        return res.status(404).json({
+          success: false,
+          message: "Module not found",
+        });
+      }
+
+      // Find the lesson
+      const lesson = module.lessons.find((l: any) => l.id === lessonId || (l.toObject && l.toObject().id === lessonId));
+      if (!lesson) {
+        return res.status(404).json({
+          success: false,
+          message: "Lesson not found",
+        });
+      }
+
+      // Generate unique filename
+      const timestamp = Date.now();
+      const originalName = req.file.originalname.replace(/\.[^/.]+$/, "");
+      const sanitizedName = originalName
+        .replace(/[^a-zA-Z0-9]/g, "-")
+        .toLowerCase();
+      const fileName = `${sanitizedName}-${timestamp}`;
+
+      // Upload document to Cloudinary
+      console.log(`Uploading document to Cloudinary: ${fileName}`);
+      const uploadResult: any = await CloudinaryService.uploadDocument(
+        req.file.buffer,
+        fileName,
+        `courses/${courseId}/documents`
+      );
+
+      console.log("Document upload successful:", uploadResult.secure_url);
+
+      // Delete old document from Cloudinary if exists
+      if (lesson.content.document?.publicId) {
+        try {
+          await CloudinaryService.deleteDocument(lesson.content.document.publicId);
+        } catch (err) {
+          console.warn("Failed to delete old document:", err);
+        }
+      }
+
+      // Update lesson with document data
+      lesson.content.document = {
+        url: uploadResult.secure_url,
+        publicId: uploadResult.public_id,
+      };
+
+      // Update lesson type
+      lesson.type = "document";
+
+      // Save the course
+      await course.save();
+
+      res.status(200).json({
+        success: true,
+        data: {
+          lesson: {
+            id: lesson.id,
+            title: lesson.title,
+            type: lesson.type,
+            content: lesson.content,
+          },
+          documentInfo: {
+            url: uploadResult.secure_url,
+            publicId: uploadResult.public_id,
+            bytes: uploadResult.bytes,
+            format: uploadResult.format,
+            originalFilename: req.file.originalname,
+          },
+        },
+        message: "Document uploaded successfully",
+      });
+    } catch (error: any) {
+      console.error("Document upload error:", error);
+
+      if (error.message && error.message.includes("Unsupported file type")) {
+        return res.status(415).json({
+          success: false,
+          message: error.message,
+        });
+      }
+
+      res.status(500).json({
+        success: false,
+        message: error.message || "Failed to upload document",
+        error: process.env.NODE_ENV === "development" ? error.stack : undefined,
+      });
+    }
+  },
+];
+
 // @desc    Upload video to Cloudinary and add to lesson
 // @route   POST /api/videos/upload/:courseId/:moduleId/:lessonId
 // @access  Private/Admin
@@ -68,8 +215,8 @@ export const uploadVideoToLesson = [
         });
       }
 
-      // Find the module using array find method
-      const module = course.modules.find((m: any) => m.id === moduleId);
+      // Find the module using array find method with toObject() for custom id parsing
+      const module = course.modules.find((m: any) => m.id === moduleId || (m.toObject && m.toObject().id === moduleId));
       if (!module) {
         return res.status(404).json({
           success: false,
@@ -77,8 +224,8 @@ export const uploadVideoToLesson = [
         });
       }
 
-      // Find the lesson using array find method
-      const lesson = module.lessons.find((l: any) => l.id === lessonId);
+      // Find the lesson using array find method with toObject() for custom id parsing
+      const lesson = module.lessons.find((l: any) => l.id === lessonId || (l.toObject && l.toObject().id === lessonId));
       if (!lesson) {
         return res.status(404).json({
           success: false,
@@ -203,7 +350,7 @@ export const getVideoStreamUrl = async (
     }
 
     // Find the module using array find method
-    const module = course.modules.find((m: any) => m.id === moduleId);
+    const module = course.modules.find((m: any) => m.id === moduleId || (m.toObject && m.toObject().id === moduleId));
     if (!module) {
       return res.status(404).json({
         success: false,
@@ -212,7 +359,7 @@ export const getVideoStreamUrl = async (
     }
 
     // Find the lesson using array find method
-    const lesson = module.lessons.find((l: any) => l.id === lessonId);
+    const lesson = module.lessons.find((l: any) => l.id === lessonId || (l.toObject && l.toObject().id === lessonId));
     if (!lesson || lesson.type !== "video" || !lesson.content.video) {
       return res.status(404).json({
         success: false,
@@ -320,7 +467,7 @@ export const updateVideoLesson = async (req: Request, res: Response) => {
     }
 
     // Find the module using array find method
-    const module = course.modules.find((m: any) => m.id === moduleId);
+    const module = course.modules.find((m: any) => m.id === moduleId || (m.toObject && m.toObject().id === moduleId));
     if (!module) {
       return res.status(404).json({
         success: false,
@@ -329,7 +476,7 @@ export const updateVideoLesson = async (req: Request, res: Response) => {
     }
 
     // Find the lesson using array find method
-    const lesson = module.lessons.find((l: any) => l.id === lessonId);
+    const lesson = module.lessons.find((l: any) => l.id === lessonId || (l.toObject && l.toObject().id === lessonId));
     if (!lesson) {
       return res.status(404).json({
         success: false,
@@ -395,7 +542,7 @@ export const deleteVideo = async (req: Request, res: Response) => {
     }
 
     // Find the module using array find method
-    const module = course.modules.find((m: any) => m.id === moduleId);
+    const module = course.modules.find((m: any) => m.id === moduleId || (m.toObject && m.toObject().id === moduleId));
     if (!module) {
       return res.status(404).json({
         success: false,
@@ -404,7 +551,7 @@ export const deleteVideo = async (req: Request, res: Response) => {
     }
 
     // Find the lesson using array find method
-    const lesson = module.lessons.find((l: any) => l.id === lessonId);
+    const lesson = module.lessons.find((l: any) => l.id === lessonId || (l.toObject && l.toObject().id === lessonId));
     if (!lesson) {
       return res.status(404).json({
         success: false,
@@ -467,7 +614,7 @@ export const getVideoAnalytics = async (req: Request, res: Response) => {
     }
 
     // Find the module using array find method
-    const module = course.modules.find((m: any) => m.id === moduleId);
+    const module = course.modules.find((m: any) => m.id === moduleId || (m.toObject && m.toObject().id === moduleId));
     if (!module) {
       return res.status(404).json({
         success: false,
@@ -476,7 +623,7 @@ export const getVideoAnalytics = async (req: Request, res: Response) => {
     }
 
     // Find the lesson using array find method
-    const lesson = module.lessons.find((l: any) => l.id === lessonId);
+    const lesson = module.lessons.find((l: any) => l.id === lessonId || (l.toObject && l.toObject().id === lessonId));
     if (!lesson || lesson.type !== "video") {
       return res.status(404).json({
         success: false,
@@ -528,7 +675,7 @@ export const generateThumbnail = async (req: Request, res: Response) => {
     }
 
     // Find the module using array find method
-    const module = course.modules.find((m: any) => m.id === moduleId);
+    const module = course.modules.find((m: any) => m.id === moduleId || (m.toObject && m.toObject().id === moduleId));
     if (!module) {
       return res.status(404).json({
         success: false,
@@ -537,7 +684,7 @@ export const generateThumbnail = async (req: Request, res: Response) => {
     }
 
     // Find the lesson using array find method
-    const lesson = module.lessons.find((l: any) => l.id === lessonId);
+    const lesson = module.lessons.find((l: any) => l.id === lessonId || (l.toObject && l.toObject().id === lessonId));
     if (!lesson || lesson.type !== "video" || !lesson.content.video) {
       return res.status(404).json({
         success: false,
@@ -605,14 +752,14 @@ export const batchUpdateVideoLessons = async (req: Request, res: Response) => {
         const { moduleId, lessonId, ...updateData } = update;
 
         // Find the module using array find method
-        const module = course.modules.find((m: any) => m.id === moduleId);
+        const module = course.modules.find((m: any) => m.id === moduleId || (m.toObject && m.toObject().id === moduleId));
         if (!module) {
           errors.push({ moduleId, lessonId, error: "Module not found" });
           continue;
         }
 
         // Find the lesson using array find method
-        const lesson = module.lessons.find((l: any) => l.id === lessonId);
+        const lesson = module.lessons.find((l: any) => l.id === lessonId || (l.toObject && l.toObject().id === lessonId));
         if (!lesson) {
           errors.push({ moduleId, lessonId, error: "Lesson not found" });
           continue;
@@ -680,7 +827,7 @@ export const getUploadProgress = async (req: Request, res: Response) => {
 // Helper function to update module duration
 const updateModuleDuration = (course: any, moduleId: string) => {
   // Find the module using array find method
-  const module = course.modules.find((m: any) => m.id === moduleId);
+  const module = course.modules.find((m: any) => m.id === moduleId || (m.toObject && m.toObject().id === moduleId));
   if (!module) return;
 
   // Calculate total duration of all lessons in module

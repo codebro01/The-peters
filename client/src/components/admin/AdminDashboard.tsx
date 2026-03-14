@@ -150,8 +150,9 @@ const api = {
     options: RequestInit = {}
   ): Promise<T> {
     const token = localStorage.getItem("token");
+    const isFormData = options.body instanceof FormData;
     const headers: Record<string, string> = {
-      "Content-Type": "application/json",
+      ...(!isFormData && { "Content-Type": "application/json" }),
       ...(token && { Authorization: `Bearer ${token}` }),
       ...((options.headers as Record<string, string>) || {}),
     };
@@ -193,23 +194,49 @@ const api = {
   togglePublish: (id: string) =>
     api.request(`/admin/courses/${id}/publish`, { method: "PATCH" }),
 
-  // Video upload endpoints
+  // Video upload with progress tracking via XMLHttpRequest
   uploadVideo: (
     file: File,
     courseId: string,
     moduleId: string,
-    lessonId: string
-  ) => {
-    const formData = new FormData();
-    formData.append("video", file);
+    lessonId: string,
+    onProgress?: (percent: number) => void
+  ): Promise<any> => {
+    return new Promise((resolve, reject) => {
+      const formData = new FormData();
+      formData.append("video", file);
+      const token = localStorage.getItem("token");
 
-    return api.request<CloudinaryUploadResult>(
-      `/videos/upload/${courseId}/${moduleId}/${lessonId}`,
-      {
-        method: "POST",
-        body: formData,
+      const xhr = new XMLHttpRequest();
+      xhr.open("POST", `${API_BASE_URL}/videos/upload/${courseId}/${moduleId}/${lessonId}`);
+
+      if (token) {
+        xhr.setRequestHeader("Authorization", `Bearer ${token}`);
       }
-    );
+
+      xhr.upload.onprogress = (event) => {
+        if (event.lengthComputable && onProgress) {
+          const percent = Math.round((event.loaded / event.total) * 100);
+          onProgress(percent);
+        }
+      };
+
+      xhr.onload = () => {
+        try {
+          const data = JSON.parse(xhr.responseText);
+          if (xhr.status >= 200 && xhr.status < 300 && data.success) {
+            resolve(data.data);
+          } else {
+            reject(new Error(data.message || "Upload failed"));
+          }
+        } catch {
+          reject(new Error("Failed to parse server response"));
+        }
+      };
+
+      xhr.onerror = () => reject(new Error("Network error during upload"));
+      xhr.send(formData);
+    });
   },
 
   updateVideoLesson: (
@@ -227,6 +254,51 @@ const api = {
     api.request(`/videos/${courseId}/${moduleId}/${lessonId}`, {
       method: "DELETE",
     }),
+
+  // Document upload with progress tracking via XMLHttpRequest
+  uploadDocument: (
+    file: File,
+    courseId: string,
+    moduleId: string,
+    lessonId: string,
+    onProgress?: (percent: number) => void
+  ): Promise<any> => {
+    return new Promise((resolve, reject) => {
+      const formData = new FormData();
+      formData.append("document", file);
+      const token = localStorage.getItem("token");
+
+      const xhr = new XMLHttpRequest();
+      xhr.open("POST", `${API_BASE_URL}/videos/upload-document/${courseId}/${moduleId}/${lessonId}`);
+
+      if (token) {
+        xhr.setRequestHeader("Authorization", `Bearer ${token}`);
+      }
+
+      xhr.upload.onprogress = (event) => {
+        if (event.lengthComputable && onProgress) {
+          const percent = Math.round((event.loaded / event.total) * 100);
+          onProgress(percent);
+        }
+      };
+
+      xhr.onload = () => {
+        try {
+          const data = JSON.parse(xhr.responseText);
+          if (xhr.status >= 200 && xhr.status < 300 && data.success) {
+            resolve(data.data);
+          } else {
+            reject(new Error(data.message || "Upload failed"));
+          }
+        } catch {
+          reject(new Error("Failed to parse server response"));
+        }
+      };
+
+      xhr.onerror = () => reject(new Error("Network error during upload"));
+      xhr.send(formData);
+    });
+  },
 
   getVideoStream: (courseId: string, moduleId: string, lessonId: string) =>
     api.request<{ streamUrl: string; thumbnailUrl: string; duration: number }>(
@@ -257,6 +329,170 @@ const api = {
   // Analytics
   getEnrollments: () => api.request<Enrollment[]>("/admin/enrollments"),
   getPayments: () => api.request<Payment[]>("/admin/payments"),
+};
+
+// Document Uploader Component
+const DocumentUploader: React.FC<{
+  courseId: string;
+  moduleId: string;
+  lessonId: string;
+  onUploadComplete: (result: any) => void;
+  existingDocument?: { url: string; publicId: string };
+  onRemoveDocument: () => void;
+}> = ({
+  courseId,
+  moduleId,
+  lessonId,
+  onUploadComplete,
+  existingDocument,
+  onRemoveDocument,
+}) => {
+  const [uploading, setUploading] = useState(false);
+  const [progress, setProgress] = useState(0);
+  const [error, setError] = useState<string | null>(null);
+
+  const handleFileSelect = async (e: ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Validate file
+    if (file.type !== "application/pdf") {
+      setError("Please upload a valid PDF file");
+      return;
+    }
+
+    if (file.size > 20 * 1024 * 1024) {
+      setError("Document file must be less than 20MB");
+      return;
+    }
+
+    setUploading(true);
+    setProgress(0);
+    setError(null);
+
+    try {
+      const result = await api.uploadDocument(
+        file,
+        courseId,
+        moduleId,
+        lessonId,
+        (percent) => setProgress(percent)
+      );
+      onUploadComplete(result);
+      setProgress(100);
+
+      setTimeout(() => {
+        setUploading(false);
+        setProgress(0);
+      }, 1000);
+    } catch (err: any) {
+      setError(err.message || "Upload failed");
+      setUploading(false);
+    } finally {
+      e.target.value = "";
+    }
+  };
+
+  return (
+    <div className="document-uploader p-4 border rounded-lg bg-gray-50">
+      <div className="flex justify-between items-center mb-4">
+        <h5 className="font-medium text-gray-700 flex items-center gap-2">
+          <FileText className="w-5 h-5" />
+          Lesson Document (PDF)
+        </h5>
+        {existingDocument && !uploading && (
+          <button
+            type="button"
+            onClick={onRemoveDocument}
+            className="text-red-500 hover:text-red-700 text-sm flex items-center gap-1"
+          >
+            <Trash2 className="w-4 h-4" />
+            Remove Document
+          </button>
+        )}
+      </div>
+
+      {error && (
+        <div className="mb-4 p-3 bg-red-50 text-red-700 rounded-lg text-sm flex items-start gap-2">
+          <AlertCircle className="w-5 h-5 shrink-0" />
+          {error}
+        </div>
+      )}
+
+      {!existingDocument && !uploading && (
+        <div className="flex items-center justify-center w-full">
+          <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer bg-white hover:bg-gray-50 transition-colors">
+            <div className="flex flex-col items-center justify-center pt-5 pb-6">
+              <Upload className="w-8 h-8 text-gray-400 mb-2" />
+              <p className="mb-2 text-sm text-gray-500">
+                <span className="font-semibold">Click to upload</span> or drag
+                and drop
+              </p>
+              <p className="text-xs text-gray-500">PDF (MAX. 20MB)</p>
+            </div>
+            <input
+              type="file"
+              className="hidden"
+              accept=".pdf,application/pdf"
+              onChange={handleFileSelect}
+            />
+          </label>
+        </div>
+      )}
+
+      {uploading && (
+        <div className="w-full bg-white p-4 rounded-lg border">
+          <div className="flex justify-between text-sm text-gray-600 mb-2">
+            <span>Uploading document...</span>
+            <span>{progress}%</span>
+          </div>
+          <div className="w-full bg-gray-200 rounded-full h-2">
+            <div
+              className="bg-green-600 h-2 rounded-full transition-all duration-300"
+              style={{ width: `${progress}%` }}
+            ></div>
+          </div>
+        </div>
+      )}
+
+      {existingDocument && !uploading && (
+        <div className="bg-white p-4 rounded-lg border">
+          <div className="flex items-center gap-3">
+            <div className="w-12 h-12 bg-gray-100 rounded-lg flex items-center justify-center grow-0 shrink-0">
+              <FileText className="w-6 h-6 text-gray-600" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-medium text-gray-900 truncate">
+                Document Uploaded
+              </p>
+              <div className="flex gap-4 mt-1">
+                <a
+                  href={existingDocument.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-xs text-green-600 hover:text-green-800"
+                >
+                  View Document
+                </a>
+              </div>
+            </div>
+            <div>
+              <label className="cursor-pointer text-sm text-blue-600 hover:text-blue-800 px-3 py-1 border border-blue-600 rounded flex items-center gap-1 bg-blue-50">
+                <Upload className="w-4 h-4" />
+                Replace
+                <input
+                  type="file"
+                  className="hidden"
+                  accept=".pdf,application/pdf"
+                  onChange={handleFileSelect}
+                />
+              </label>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
 };
 
 // Video Uploader Component
@@ -311,7 +547,10 @@ const VideoUploader: React.FC<{
       const url = URL.createObjectURL(file);
       setPreviewUrl(url);
 
-      const result = await api.uploadVideo(file, courseId, moduleId, lessonId);
+      const result = await api.uploadVideo(
+        file, courseId, moduleId, lessonId,
+        (percent) => setProgress(percent)
+      );
       onUploadComplete(result);
       setProgress(100);
 
@@ -344,6 +583,7 @@ const VideoUploader: React.FC<{
         </h4>
         {existingVideo && onRemoveVideo && (
           <button
+            type="button"
             onClick={onRemoveVideo}
             className="text-sm text-red-600 hover:text-red-700 flex items-center gap-1"
           >
@@ -494,8 +734,19 @@ const LessonEditor: React.FC<{
   const [expanded, setExpanded] = useState(false);
   const [uploading, setUploading] = useState(false);
 
-  const handleVideoUpload = (result: CloudinaryUploadResult) => {
-    const durationInSeconds = result.duration || 0;
+  const handleVideoUpload = (result: any) => {
+    // The server returns { lesson: {...}, videoInfo: {...} }
+    const videoInfo = result.videoInfo || result;
+    const lessonData = result.lesson;
+
+    // Use lesson data from server (already saved to DB) or fall back to videoInfo
+    const videoUrl = lessonData?.content?.video?.url || videoInfo.url || videoInfo.secure_url;
+    const videoPublicId = lessonData?.content?.video?.publicId || videoInfo.public_id;
+    const videoDuration = lessonData?.content?.video?.duration || videoInfo.duration || 0;
+    const videoThumbnail = lessonData?.content?.video?.thumbnail || videoInfo.thumbnail;
+    const videoFormat = lessonData?.content?.video?.format || videoInfo.format;
+
+    const durationInSeconds = videoDuration;
     const minutes = Math.floor(durationInSeconds / 60);
     const seconds = Math.floor(durationInSeconds % 60);
     const durationFormatted = `${minutes}:${seconds
@@ -507,13 +758,13 @@ const LessonEditor: React.FC<{
       type: "video",
       content: {
         video: {
-          url: result.secure_url,
-          publicId: result.public_id,
+          url: videoUrl,
+          publicId: videoPublicId,
           duration: durationInSeconds,
           thumbnail:
-            result.thumbnail_url ||
-            result.secure_url.replace(/\.(mp4|mov|avi|wmv)$/, ".jpg"),
-          format: result.format,
+            videoThumbnail ||
+            (videoUrl ? videoUrl.replace(/\.(mp4|mov|avi|wmv)$/, ".jpg") : ""),
+          format: videoFormat,
         },
       },
     });
@@ -534,12 +785,40 @@ const LessonEditor: React.FC<{
     }
   };
 
+  const handleDocumentUpload = (result: any) => {
+    const docInfo = result.documentInfo || result;
+    const lessonData = result.lesson;
+
+    const docUrl = lessonData?.content?.document?.url || docInfo.url;
+    const docPublicId = lessonData?.content?.document?.publicId || docInfo.publicId || docInfo.public_id;
+
+    onUpdate(lessonIndex, {
+      type: "document",
+      content: {
+        document: {
+          url: docUrl,
+          publicId: docPublicId,
+        },
+      },
+    });
+  };
+
+  const handleRemoveDocument = () => {
+    if (window.confirm("Are you sure you want to remove this document?")) {
+      onUpdate(lessonIndex, {
+        type: "document",
+        content: {},
+      });
+    }
+  };
+
   return (
     <div className="border rounded-lg bg-white">
       <div className="p-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <button
+              type="button"
               onClick={() => setExpanded(!expanded)}
               className="text-gray-500 hover:text-gray-700"
             >
@@ -593,6 +872,7 @@ const LessonEditor: React.FC<{
           <div className="flex items-center gap-2">
             <span className="text-sm text-gray-500">{lesson.duration}</span>
             <button
+              type="button"
               onClick={() => onDelete(lessonIndex)}
               className="text-red-600 hover:text-red-700 p-1"
             >
@@ -667,23 +947,14 @@ const LessonEditor: React.FC<{
             )}
 
             {lesson.type === "document" && (
-              <div className="p-4 border rounded-lg bg-gray-50">
-                <h5 className="font-medium text-gray-700 mb-2 flex items-center gap-2">
-                  <FileText className="w-5 h-5" />
-                  Document Content
-                </h5>
-                <textarea
-                  value={lesson.content?.text || ""}
-                  onChange={(e) =>
-                    onUpdate(lessonIndex, {
-                      content: { text: e.target.value },
-                    })
-                  }
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                  rows={4}
-                  placeholder="Enter document content or instructions..."
-                />
-              </div>
+              <DocumentUploader
+                courseId={courseId}
+                moduleId={moduleId}
+                lessonId={lesson.id}
+                onUploadComplete={handleDocumentUpload}
+                existingDocument={lesson.content?.document}
+                onRemoveDocument={handleRemoveDocument}
+              />
             )}
           </div>
         )}
@@ -697,7 +968,11 @@ const ModuleEditor: React.FC<{
   module: Module;
   courseId: string;
   moduleIndex: number;
-  onUpdate: (index: number, updates: Partial<Module>) => void;
+  onUpdate: (
+    index: number,
+    updates: Partial<Module>,
+    shouldAutoSave?: boolean
+  ) => void;
   onDelete: (index: number) => void;
 }> = ({ module, courseId, moduleIndex, onUpdate, onDelete }) => {
   const [expanded, setExpanded] = useState(false);
@@ -714,9 +989,13 @@ const ModuleEditor: React.FC<{
       content: {},
     };
 
-    onUpdate(moduleIndex, {
-      lessons: [...module.lessons, newLesson],
-    });
+    onUpdate(
+      moduleIndex,
+      {
+        lessons: [...module.lessons, newLesson],
+      },
+      true // Auto-save when adding lesson so the ID exists on the server before upload
+    );
   };
 
   const updateLesson = (lessonIndex: number, updates: Partial<Lesson>) => {
@@ -731,7 +1010,7 @@ const ModuleEditor: React.FC<{
   const deleteLesson = (lessonIndex: number) => {
     if (window.confirm("Are you sure you want to delete this lesson?")) {
       const updatedLessons = module.lessons.filter((_, i) => i !== lessonIndex);
-      onUpdate(moduleIndex, { lessons: updatedLessons });
+      onUpdate(moduleIndex, { lessons: updatedLessons }, true);
     }
   };
 
@@ -741,6 +1020,7 @@ const ModuleEditor: React.FC<{
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <button
+              type="button"
               onClick={() => setExpanded(!expanded)}
               className="text-gray-500 hover:text-gray-700"
             >
@@ -772,6 +1052,7 @@ const ModuleEditor: React.FC<{
           </div>
           <div className="flex items-center gap-2">
             <button
+              type="button"
               onClick={() => onDelete(moduleIndex)}
               className="text-red-600 hover:text-red-700 p-1"
             >
@@ -834,6 +1115,7 @@ const ModuleEditor: React.FC<{
               <div className="flex items-center justify-between mb-4">
                 <h5 className="font-medium text-gray-700">Lessons</h5>
                 <button
+                  type="button"
                   onClick={addLesson}
                   className="text-sm text-green-600 hover:text-green-700 flex items-center gap-1"
                 >
@@ -900,7 +1182,7 @@ const CourseEditorModal: React.FC<{
     }
   };
 
-  const addModule = () => {
+  const addModule = async () => {
     const newModule: Module = {
       id: `module-${Date.now()}`,
       title: `Module ${(formData.modules?.length || 0) + 1}`,
@@ -909,19 +1191,40 @@ const CourseEditorModal: React.FC<{
       lessons: [],
     };
 
+    const updatedModules = [...(formData.modules || []), newModule];
     setFormData((prev) => ({
       ...prev,
-      modules: [...(prev.modules || []), newModule],
+      modules: updatedModules,
     }));
+
+    if (course?._id) {
+      try {
+        await api.updateCourse(course._id, { ...formData, modules: updatedModules });
+      } catch (err) {
+        console.error("Auto-save module failed:", err);
+      }
+    }
   };
 
-  const updateModule = (index: number, updates: Partial<Module>) => {
+  const updateModule = async (
+    index: number,
+    updates: Partial<Module>,
+    shouldAutoSave = false
+  ) => {
     const updatedModules = [...(formData.modules || [])];
     updatedModules[index] = { ...updatedModules[index], ...updates };
     setFormData((prev) => ({ ...prev, modules: updatedModules }));
+
+    if (shouldAutoSave && course?._id) {
+      try {
+        await api.updateCourse(course._id, { ...formData, modules: updatedModules });
+      } catch (err) {
+        console.error("Auto-save update failed:", err);
+      }
+    }
   };
 
-  const deleteModule = (index: number) => {
+  const deleteModule = async (index: number) => {
     if (
       window.confirm(
         "Are you sure you want to delete this module and all its lessons?"
@@ -931,6 +1234,14 @@ const CourseEditorModal: React.FC<{
         (_, i) => i !== index
       );
       setFormData((prev) => ({ ...prev, modules: updatedModules }));
+
+      if (course?._id) {
+        try {
+          await api.updateCourse(course._id, { ...formData, modules: updatedModules });
+        } catch (err) {
+          console.error("Auto-save delete failed:", err);
+        }
+      }
     }
   };
 

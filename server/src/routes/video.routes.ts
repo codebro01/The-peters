@@ -2,6 +2,7 @@
 import express from "express";
 import {
   uploadVideoToLesson,
+  uploadDocumentToLesson,
   getVideoStreamUrl,
   updateVideoLesson,
   deleteVideo,
@@ -26,6 +27,13 @@ router.post(
   "/upload/:courseId/:moduleId/:lessonId",
   authorize("admin", "instructor"),
   uploadVideoToLesson
+);
+
+// Upload document to lesson (Admin/Instructor only)
+router.post(
+  "/upload-document/:courseId/:moduleId/:lessonId",
+  authorize("admin", "instructor"),
+  uploadDocumentToLesson
 );
 
 // Get video stream URL (Protected but uses validateToken for previews)

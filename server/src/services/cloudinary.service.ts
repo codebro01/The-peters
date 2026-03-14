@@ -44,6 +44,34 @@ class CloudinaryService {
     });
   }
 
+  async uploadDocument(
+    buffer: Buffer,
+    filename: string,
+    folder: string = "lms/documents"
+  ): Promise<UploadApiResponse> {
+    return new Promise((resolve, reject) => {
+      const uploadStream = cloudinary.uploader.upload_stream(
+        {
+          resource_type: "raw",
+          folder: folder,
+          public_id: filename.split(".")[0],
+          overwrite: true,
+          format: "pdf",
+        },
+        (
+          error: UploadApiErrorResponse | undefined,
+          result: UploadApiResponse | undefined
+        ) => {
+          if (error) reject(error);
+          else if (result) resolve(result);
+          else reject(new Error("Unknown upload error"));
+        }
+      );
+
+      streamifier.createReadStream(buffer).pipe(uploadStream);
+    });
+  }
+
   generateVideoUrl(publicId: string, transformations: any[] = []) {
     return cloudinary.url(publicId, {
       resource_type: "video",
@@ -67,6 +95,12 @@ class CloudinaryService {
   async deleteVideo(publicId: string) {
     return await cloudinary.uploader.destroy(publicId, {
       resource_type: "video",
+    });
+  }
+
+  async deleteDocument(publicId: string) {
+    return await cloudinary.uploader.destroy(publicId, {
+      resource_type: "raw",
     });
   }
 
