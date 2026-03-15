@@ -3,6 +3,7 @@ import Product from "../models/Product";
 import Order from "../models/Order";
 import axios from "axios";
 import { v4 as uuidv4 } from "uuid";
+import cloudinaryService from "../services/cloudinary.service";
 
 // ============================================
 // PRODUCT CONTROLLERS (PUBLIC)
@@ -289,6 +290,27 @@ export const adminDeleteProduct = async (req: Request, res: Response): Promise<v
   }
 };
 
+// @desc    Get all products (admin)
+// @route   GET /api/admin/products
+// @access  Private/Admin
+export const adminGetAllProducts = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const products = await Product.find().sort({ createdAt: -1 });
+
+    res.status(200).json({
+      success: true,
+      count: products.length,
+      data: products,
+    });
+  } catch (error: any) {
+    res.status(500).json({
+      success: false,
+      message: "Failed to fetch products",
+      error: error.message,
+    });
+  }
+};
+
 // @desc    Get all orders (admin)
 // @route   GET /api/admin/orders
 // @access  Private/Admin
@@ -307,6 +329,42 @@ export const adminGetAllOrders = async (req: Request, res: Response): Promise<vo
     res.status(500).json({
       success: false,
       message: "Failed to fetch orders",
+    });
+  }
+};
+
+// @desc    Upload product image
+// @route   POST /api/admin/product-image/upload
+// @access  Private/Admin
+export const adminUploadProductImage = async (req: Request, res: Response): Promise<void> => {
+  try {
+    if (!req.file) {
+       res.status(400).json({
+        success: false,
+        message: "Please upload an image",
+      });
+       return;
+    }
+
+    const result = await cloudinaryService.uploadImage(
+      req.file.buffer,
+      req.file.originalname,
+      "store/products"
+    );
+
+    res.status(200).json({
+      success: true,
+      data: {
+        url: result.secure_url,
+        publicId: result.public_id,
+      },
+      message: "Image uploaded successfully",
+    });
+  } catch (error: any) {
+    res.status(500).json({
+      success: false,
+      message: "Failed to upload image",
+      error: error.message,
     });
   }
 };

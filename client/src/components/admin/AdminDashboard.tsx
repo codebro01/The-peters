@@ -410,6 +410,34 @@ const api = {
 
   // Orders
   getOrders: () => api.request<Order[]>("/admin/orders"),
+
+  // Image Upload
+  uploadProductImage: (file: File) => {
+    return new Promise((resolve, reject) => {
+      const formData = new FormData();
+      formData.append("image", file);
+
+      const xhr = new XMLHttpRequest();
+      xhr.open("POST", `${API_BASE_URL}/admin/product-image/upload`);
+      xhr.setRequestHeader("Authorization", `Bearer ${localStorage.getItem("token")}`);
+
+      xhr.onload = () => {
+        try {
+          const data = JSON.parse(xhr.responseText);
+          if (xhr.status >= 200 && xhr.status < 300 && data.success) {
+            resolve(data.data);
+          } else {
+            reject(new Error(data.message || "Upload failed"));
+          }
+        } catch {
+          reject(new Error("Failed to parse server response"));
+        }
+      };
+
+      xhr.onerror = () => reject(new Error("Network error during upload"));
+      xhr.send(formData);
+    });
+  },
 };
 
 // Document Uploader Component
@@ -1705,6 +1733,34 @@ const ProductEditorModal: React.FC<{
   });
 
   const [saving, setSaving] = useState(false);
+  const [uploading, setUploading] = useState(false);
+
+  const handleImageUpload = async (e: ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith("image/")) {
+      alert("Please upload an image file");
+      return;
+    }
+
+    setUploading(true);
+    try {
+      const result: any = await api.uploadProductImage(file);
+      setFormData({
+        ...formData,
+        image: {
+          url: result.url,
+          publicId: result.publicId,
+        },
+      });
+    } catch (error) {
+      console.error("Upload failed:", error);
+      alert("Failed to upload image");
+    } finally {
+      setUploading(false);
+    }
+  };
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
@@ -1806,15 +1862,39 @@ const ProductEditorModal: React.FC<{
             </div>
 
             <div className="col-span-2">
-              <label className="block text-sm font-medium text-gray-700 mb-1">Image URL</label>
-              <input
-                type="text"
-                required
-                value={formData.image.url}
-                onChange={(e) => setFormData({ ...formData, image: { ...formData.image, url: e.target.value } })}
-                placeholder="https://images.unsplash.com/..."
-                className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-green-500"
-              />
+              <label className="block text-sm font-medium text-gray-700 mb-1">Product Image</label>
+              <div className="mt-1 flex items-center gap-4">
+                {formData.image.url ? (
+                  <div className="relative">
+                    <img
+                      src={formData.image.url}
+                      alt="Preview"
+                      className="w-20 h-20 object-cover rounded-lg border"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setFormData({ ...formData, image: { url: "", publicId: "" } })}
+                      className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 shadow-sm"
+                    >
+                      <X className="w-3 h-3" />
+                    </button>
+                  </div>
+                ) : (
+                  <div className="w-20 h-20 border-2 border-dashed rounded-lg flex items-center justify-center bg-gray-50">
+                    <Upload className="w-6 h-6 text-gray-400" />
+                  </div>
+                )}
+                <div className="flex-1">
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={handleImageUpload}
+                    disabled={uploading}
+                    className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-green-50 file:text-green-700 hover:file:bg-green-100"
+                  />
+                  {uploading && <p className="text-sm text-blue-600 mt-1">Uploading...</p>}
+                </div>
+              </div>
             </div>
           </div>
 

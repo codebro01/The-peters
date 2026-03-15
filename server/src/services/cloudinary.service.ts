@@ -73,6 +73,33 @@ class CloudinaryService {
     });
   }
 
+  async uploadImage(
+    buffer: Buffer,
+    filename: string,
+    folder: string = "store/products"
+  ): Promise<UploadApiResponse> {
+    return new Promise((resolve, reject) => {
+      const uploadStream = cloudinary.uploader.upload_stream(
+        {
+          resource_type: "image",
+          folder: folder,
+          public_id: filename.split(".")[0],
+          overwrite: true,
+        },
+        (
+          error: UploadApiErrorResponse | undefined,
+          result: UploadApiResponse | undefined
+        ) => {
+          if (error) reject(error);
+          else if (result) resolve(result);
+          else reject(new Error("Unknown upload error"));
+        }
+      );
+
+      streamifier.createReadStream(buffer).pipe(uploadStream);
+    });
+  }
+
   generateVideoUrl(publicId: string, transformations: any[] = []) {
     return cloudinary.url(publicId, {
       resource_type: "video",

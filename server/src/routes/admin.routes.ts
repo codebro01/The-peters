@@ -5,6 +5,8 @@ import {
   adminUpdateProduct,
   adminDeleteProduct,
   adminGetAllOrders,
+  adminUploadProductImage,
+  adminGetAllProducts
 } from "../controllers/store.controller";
 import { 
   getDashboardStats,
@@ -22,6 +24,10 @@ import {
   toggleUserStatus,
 } from "../controllers/admin.controller";
 import { protect, admin } from "../middleware/auth.middleware";
+import multer from "multer";
+
+const storage = multer.memoryStorage();
+const upload = multer({ storage });
 
 const router = express.Router();
 
@@ -58,9 +64,11 @@ router.get("/payments", getAllPayments);
 // ============================================
 // PRODUCT MANAGEMENT ROUTES
 // ============================================
+router.get("/products", adminGetAllProducts);
 router.post("/products", adminCreateProduct);
 router.put("/products/:id", adminUpdateProduct);
 router.delete("/products/:id", adminDeleteProduct);
+router.post("/product-image/upload", upload.single("image"), adminUploadProductImage);
 
 // ============================================
 // ORDER MANAGEMENT ROUTES
