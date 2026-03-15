@@ -30,6 +30,7 @@ app.use(
       "http://localhost:4000",
       "http://localhost:3001",
       "http://localhost:3002",
+      "https://the-peters.onrender.com"
     ],
     credentials: true,
   })
