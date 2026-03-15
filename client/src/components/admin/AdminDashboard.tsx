@@ -21,6 +21,7 @@ import {
   ChevronDown,
   ChevronUp,
   AlertCircle,
+  Star,
 } from "lucide-react";
 
 const API_BASE_URL = "http://localhost:5000/api";
@@ -113,11 +114,22 @@ interface Course {
 
 interface Enrollment {
   _id: string;
-  studentName: string;
-  courseTitle: string;
-  progress: number;
+  userId: {
+    _id: string;
+    firstName: string;
+    lastName: string;
+    email: string;
+  };
+  courseId: {
+    _id: string;
+    title: string;
+  };
+  progress: {
+    progressPercentage: number;
+  };
   enrolledAt: string;
-  status: string;
+  paymentStatus: string;
+  status?: string;
   createdAt?: string;
 }
 
@@ -140,7 +152,8 @@ interface DashboardStats {
   totalCourses: number;
   totalStudents: number;
   totalEnrollments: number;
-  recentEnrollments?: Enrollment[];
+  recentEnrollments?: any[];
+  topCourses?: any[];
 }
 
 // API client
@@ -1871,10 +1884,10 @@ const AdminDashboard = () => {
 
   const filteredEnrollments = enrollments.filter(
     (enrollment) =>
-      enrollment.studentName
+      `${enrollment.userId?.firstName} ${enrollment.userId?.lastName}`
         ?.toLowerCase()
         .includes(searchTerm.toLowerCase()) ||
-      enrollment.courseTitle?.toLowerCase().includes(searchTerm.toLowerCase())
+      enrollment.courseId?.title?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   const filteredPayments = payments.filter(
@@ -2017,6 +2030,96 @@ const AdminDashboard = () => {
                 <p className="text-3xl font-bold text-gray-900">
                   {stats.totalEnrollments || 0}
                 </p>
+              </div>
+            </div>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+              {/* Recent Enrollments */}
+              <div className="bg-white rounded-lg shadow overflow-hidden">
+                <div className="px-6 py-4 border-b flex items-center justify-between">
+                  <h3 className="font-semibold text-gray-900">Recent Enrollments</h3>
+                  <button 
+                    onClick={() => setActiveTab('enrollments')}
+                    className="text-sm text-green-600 hover:text-green-700 font-medium"
+                  >
+                    View All
+                  </button>
+                </div>
+                <div className="overflow-x-auto">
+                  <table className="min-w-full divide-y divide-gray-200">
+                    <thead className="bg-gray-50">
+                      <tr>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Student
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Course
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Date
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody className="bg-white divide-y divide-gray-200">
+                      {stats.recentEnrollments?.map((enrollment: any) => (
+                        <tr key={enrollment._id}>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <div className="text-sm font-medium text-gray-900">
+                              {enrollment.userId?.firstName} {enrollment.userId?.lastName}
+                            </div>
+                            <div className="text-sm text-gray-500">{enrollment.userId?.email}</div>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            {enrollment.courseId?.title}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            {new Date(enrollment.enrolledAt).toLocaleDateString()}
+                          </td>
+                        </tr>
+                      ))}
+                      {(!stats.recentEnrollments || stats.recentEnrollments.length === 0) && (
+                        <tr>
+                          <td colSpan={3} className="px-6 py-10 text-center text-gray-500">
+                            No recent enrollments found
+                          </td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              {/* Top Performing Courses */}
+              <div className="bg-white rounded-lg shadow overflow-hidden">
+                <div className="px-6 py-4 border-b">
+                  <h3 className="font-semibold text-gray-900">Top Performing Courses</h3>
+                </div>
+                <div className="p-6">
+                  <div className="space-y-6">
+                    {stats.topCourses?.map((course: any) => (
+                      <div key={course._id} className="flex items-center justify-between">
+                        <div className="flex-1">
+                          <h4 className="text-sm font-medium text-gray-900 mb-1">{course.title}</h4>
+                          <div className="flex items-center gap-3 text-xs text-gray-500">
+                            <span>{course.enrollmentCount} students</span>
+                            <span>•</span>
+                            <span>₦{course.price.toLocaleString()}</span>
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <div className="flex items-center gap-1 text-sm font-medium text-gray-900">
+                            <Star className="w-4 h-4 text-yellow-400 fill-current" />
+                            {course.rating?.average || '0.0'}
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                    {(!stats.topCourses || stats.topCourses.length === 0) && (
+                      <div className="text-center py-10 text-gray-500">
+                        No course data available
+                      </div>
+                    )}
+                  </div>
+                </div>
               </div>
             </div>
           </div>
@@ -2213,9 +2316,9 @@ const AdminDashboard = () => {
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
                       Course
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                    {/* <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
                       Progress
-                    </th>
+                    </th> */}
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
                       Enrolled
                     </th>
@@ -2228,32 +2331,42 @@ const AdminDashboard = () => {
                   {filteredEnrollments.map((enrollment) => (
                     <tr key={enrollment._id}>
                       <td className="px-6 py-4 whitespace-nowrap font-medium">
-                        {enrollment.studentName || "N/A"}
+                        {enrollment.userId ? (
+                          <>
+                            {enrollment.userId.firstName} {enrollment.userId.lastName}
+                          </>
+                        ) : (
+                          "N/A"
+                        )}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                        {enrollment.courseTitle || "N/A"}
+                        {enrollment.courseId?.title || "N/A"}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
+                      {/* <td className="px-6 py-4 whitespace-nowrap">
                         <div className="flex items-center">
                           <div className="w-32 bg-gray-200 rounded-full h-2 mr-2">
                             <div
                               className="bg-green-600 h-2 rounded-full"
-                              style={{ width: `${enrollment.progress || 0}%` }}
+                              style={{ width: `${enrollment.progress?.progressPercentage || 0}%` }}
                             ></div>
                           </div>
                           <span className="text-sm text-gray-600">
-                            {enrollment.progress || 0}%
+                            {enrollment.progress?.progressPercentage || 0}%
                           </span>
                         </div>
-                      </td>
+                      </td> */}
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
                         {new Date(
                           enrollment.enrolledAt || enrollment.createdAt!
                         ).toLocaleDateString()}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <span className="px-2 py-1 text-xs rounded-full bg-green-100 text-green-800">
-                          {enrollment.status || "Active"}
+                        <span className={`px-2 py-1 text-xs rounded-full ${
+                          enrollment.paymentStatus === 'completed' 
+                            ? "bg-green-100 text-green-800"
+                            : "bg-yellow-100 text-yellow-800"
+                        }`}>
+                          {enrollment.paymentStatus || enrollment.status || "Active"}
                         </span>
                       </td>
                     </tr>

@@ -50,12 +50,10 @@ export const getDashboardStats = async (
     res.status(200).json({
       success: true,
       data: {
-        stats: {
-          totalStudents,
-          totalCourses,
-          activeEnrollments,
-          totalRevenue,
-        },
+        totalStudents,
+        totalCourses,
+        totalEnrollments: activeEnrollments,
+        totalRevenue,
         recentEnrollments,
         topCourses,
       },
