@@ -1,25 +1,23 @@
 import express from "express";
 import {
-  // Dashboard
+  // Products & Orders
+  adminCreateProduct,
+  adminUpdateProduct,
+  adminDeleteProduct,
+  adminGetAllOrders,
+} from "../controllers/store.controller";
+import { 
   getDashboardStats,
-
-  // Courses
   getAllCourses,
   createCourse,
   updateCourse,
   deleteCourse,
   togglePublishCourse,
-
-  // Modules
   addModule,
   updateModule,
   deleteModule,
-
-  // Enrollments & Payments
   getAllEnrollments,
   getAllPayments,
-
-  // Users
   getAllUsers,
   toggleUserStatus,
 } from "../controllers/admin.controller";
@@ -56,6 +54,18 @@ router.delete("/modules/:courseId/:moduleId", deleteModule);
 // ============================================
 router.get("/enrollments", getAllEnrollments);
 router.get("/payments", getAllPayments);
+
+// ============================================
+// PRODUCT MANAGEMENT ROUTES
+// ============================================
+router.post("/products", adminCreateProduct);
+router.put("/products/:id", adminUpdateProduct);
+router.delete("/products/:id", adminDeleteProduct);
+
+// ============================================
+// ORDER MANAGEMENT ROUTES
+// ============================================
+router.get("/orders", adminGetAllOrders);
 
 // ============================================
 // USER MANAGEMENT ROUTES

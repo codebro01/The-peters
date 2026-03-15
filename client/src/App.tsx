@@ -2,6 +2,7 @@ import React from "react";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider } from "./contexts/AuthContext";
 import { useParams } from "react-router-dom";
+import { CartProvider } from "./contexts/CartContext";
 
 // Pages
 import HomePage from "./pages/HomePage";
@@ -12,6 +13,8 @@ import CourseDetailPage from "./pages/CourseDetailPage";
 import VerifyPaymentPage from "./pages/VerifyPaymentPage";
 import ConsultationBooking from "./components/consultation/ConsultationBooking";
 import ConsultationVerify from "./components/consultation/ConsultationVerify";
+import StorePage from "./pages/StorePage";
+import CheckoutPage from "./pages/CheckoutPage";
 
 // Components - Student
 import StudentDashboard from "./components/student/Dashboard";
@@ -30,8 +33,9 @@ const App: React.FC = () => {
     <BrowserRouter>
       <ScrollToTop />
       <AuthProvider>
-        <Navbar />
-        <Routes>
+        <CartProvider>
+          <Navbar />
+          <Routes>
           {/* ============================================ */}
           {/* PUBLIC ROUTES */}
           {/* ============================================ */}
@@ -40,6 +44,15 @@ const App: React.FC = () => {
           <Route path="/register" element={<RegisterPage />} />
           <Route path="/courses" element={<CoursesPage />} />
           <Route path="/courses/:slug" element={<CourseDetailPage />} />
+          <Route path="/store" element={<StorePage />} />
+          <Route
+            path="/checkout"
+            element={
+              <ProtectedRoute>
+                <CheckoutPage />
+              </ProtectedRoute>
+            }
+          />
           <Route
             path="/verify-payment/:reference"
             element={<VerifyPaymentPage />}
@@ -85,6 +98,7 @@ const App: React.FC = () => {
           {/* ============================================ */}
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
+        </CartProvider>
       </AuthProvider>
     </BrowserRouter>
   );

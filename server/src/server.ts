@@ -14,6 +14,7 @@ import paymentRoutes from "./routes/payment.routes";
 import enrollmentRoutes from "./routes/enrollment.routes";
 import adminRoutes from "./routes/admin.routes";
 import consultationRoutes from "./routes/consultation.routes";
+import storeRoutes from "./routes/store.routes";
 
 // Initialize express app
 const app: Application = express();
@@ -61,6 +62,7 @@ app.use("/api/enrollments", enrollmentRoutes);
 app.use("/api/admin", adminRoutes);
 app.use("/api/videos", videoRoutes);
 app.use("/api/consultations", consultationRoutes);
+app.use("/api/store", storeRoutes);
 
 // 404 handler
 app.use((req: Request, res: Response) => {

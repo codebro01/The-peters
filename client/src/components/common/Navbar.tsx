@@ -1,13 +1,17 @@
 import { useState } from "react";
-import { Menu, X, UserCircle } from "lucide-react";
+import { Menu, X, UserCircle, ShoppingBag } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import logo from "../../assets/images/THE PETERS LOGO.png";
 import { useAuth } from "../../hooks/useAuth";
+import { useCart } from "../../contexts/CartContext";
 
 export default function Navbar() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const { isAuthenticated, user, logout } = useAuth();
+  const { getCartCount } = useCart();
   const navigate = useNavigate();
+
+  const cartCount = getCartCount();
 
   console.log(user, isAuthenticated)
 
@@ -51,10 +55,23 @@ export default function Navbar() {
             <a href="#contact" className="nav-link">
               Contact
             </a>
+            <Link to="/store" className="nav-link flex items-center gap-1">
+              Store
+            </Link>
           </div>
 
-          {/* AUTH ACTIONS (DESKTOP) */}
-          <div className="hidden lg:flex items-center space-x-3">
+          {/* CART & AUTH ACTIONS (DESKTOP) */}
+          <div className="hidden lg:flex items-center space-x-6">
+            <Link to="/store" className="relative text-gray-700 hover:text-emerald-600 transition">
+              <ShoppingBag size={24} />
+              {cartCount > 0 && (
+                <span className="absolute -top-2 -right-2 bg-emerald-600 text-white text-[10px] font-bold h-5 w-5 rounded-full flex items-center justify-center">
+                  {cartCount}
+                </span>
+              )}
+            </Link>
+
+            <div className="flex items-center space-x-3">
             {!isAuthenticated ? (
               <>
                 <Link
@@ -85,14 +102,24 @@ export default function Navbar() {
               </>
             )}
           </div>
+        </div>
 
-          {/* MOBILE TOGGLE */}
-          <button
-            className="lg:hidden"
-            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-          >
-            {mobileMenuOpen ? <X size={28} /> : <Menu size={28} />}
-          </button>
+        {/* MOBILE ACTIONS */}
+          <div className="flex lg:hidden items-center space-x-4">
+            <Link to="/store" className="relative text-gray-700">
+              <ShoppingBag size={24} />
+              {cartCount > 0 && (
+                <span className="absolute -top-2 -right-2 bg-emerald-600 text-white text-[10px] font-bold h-4 w-4 rounded-full flex items-center justify-center">
+                  {cartCount}
+                </span>
+              )}
+            </Link>
+            <button
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            >
+              {mobileMenuOpen ? <X size={28} /> : <Menu size={28} />}
+            </button>
+          </div>
         </div>
       </div>
 

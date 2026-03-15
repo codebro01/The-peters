@@ -22,6 +22,11 @@ import {
   ChevronUp,
   AlertCircle,
   Star,
+  Package,
+  ShoppingBag,
+  Truck,
+  MapPin,
+  Phone
 } from "lucide-react";
 
 const API_BASE_URL = "http://localhost:5000/api";
@@ -144,6 +149,51 @@ interface Payment {
     email?: string;
   };
   paidAt?: string;
+  createdAt: string;
+}
+
+interface Product {
+  _id: string;
+  name: string;
+  description: string;
+  price: number;
+  category: string;
+  stock: number;
+  image: {
+    url: string;
+    publicId: string;
+  };
+  isAvailable: boolean;
+  createdAt?: string;
+}
+
+interface OrderItem {
+  productId: string;
+  name: string;
+  quantity: number;
+  price: number;
+}
+
+interface Order {
+  _id: string;
+  userId: {
+    _id: string;
+    firstName: string;
+    lastName: string;
+    email: string;
+  };
+  items: OrderItem[];
+  totalAmount: number;
+  shippingAddress: {
+    address: string;
+    city: string;
+    state: string;
+    zipCode: string;
+    phoneNumber: string;
+  };
+  paymentStatus: string;
+  paymentReference: string;
+  orderStatus: string;
   createdAt: string;
 }
 
@@ -342,6 +392,24 @@ const api = {
   // Analytics
   getEnrollments: () => api.request<Enrollment[]>("/admin/enrollments"),
   getPayments: () => api.request<Payment[]>("/admin/payments"),
+
+  // Products
+  getProducts: () => api.request<Product[]>("/admin/products"),
+  createProduct: (data: any) =>
+    api.request<Product>("/admin/products", {
+      method: "POST",
+      body: JSON.stringify(data),
+    }),
+  updateProduct: (id: string, data: any) =>
+    api.request<Product>(`/admin/products/${id}`, {
+      method: "PUT",
+      body: JSON.stringify(data),
+    }),
+  deleteProduct: (id: string) =>
+    api.request(`/admin/products/${id}`, { method: "DELETE" }),
+
+  // Orders
+  getOrders: () => api.request<Order[]>("/admin/orders"),
 };
 
 // Document Uploader Component
@@ -1620,6 +1688,158 @@ const CourseEditorModal: React.FC<{
   );
 };
 
+// Product Editor Modal
+const ProductEditorModal: React.FC<{
+  product: Product | null;
+  onClose: () => void;
+  onSave: (product: any) => Promise<void>;
+}> = ({ product, onClose, onSave }) => {
+  const [formData, setFormData] = useState<any>({
+    name: product?.name || "",
+    description: product?.description || "",
+    price: product?.price || 0,
+    category: product?.category || "Fertilizer",
+    stock: product?.stock || 0,
+    image: product?.image || { url: "", publicId: "" },
+    isAvailable: product?.isAvailable !== undefined ? product.isAvailable : true,
+  });
+
+  const [saving, setSaving] = useState(false);
+
+  const handleSubmit = async (e: FormEvent) => {
+    e.preventDefault();
+    setSaving(true);
+    try {
+      await onSave(formData);
+      onClose();
+    } catch (error) {
+      console.error("Failed to save product:", error);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4 overflow-y-auto">
+      <div className="bg-white rounded-xl max-w-2xl w-full max-h-[90vh] overflow-hidden flex flex-col shadow-2xl">
+        <div className="p-6 border-b flex justify-between items-center bg-white sticky top-0 z-10">
+          <h2 className="text-2xl font-bold text-gray-900">
+            {product ? "Edit Product" : "Add New Product"}
+          </h2>
+          <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-full">
+            <X className="w-6 h-6 text-gray-500" />
+          </button>
+        </div>
+
+        <form onSubmit={handleSubmit} className="p-6 overflow-y-auto space-y-6">
+          <div className="grid grid-cols-2 gap-6">
+            <div className="col-span-2">
+              <label className="block text-sm font-medium text-gray-700 mb-1">Product Name</label>
+              <input
+                type="text"
+                required
+                value={formData.name}
+                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-green-500"
+              />
+            </div>
+
+            <div className="col-span-2">
+              <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+              <textarea
+                required
+                rows={3}
+                value={formData.description}
+                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-green-500"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Price (₦)</label>
+              <input
+                type="number"
+                required
+                min="0"
+                value={formData.price}
+                onChange={(e) => setFormData({ ...formData, price: Number(e.target.value) })}
+                className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-green-500"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Stock</label>
+              <input
+                type="number"
+                required
+                min="0"
+                value={formData.stock}
+                onChange={(e) => setFormData({ ...formData, stock: Number(e.target.value) })}
+                className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-green-500"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Category</label>
+              <select
+                required
+                value={formData.category}
+                onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+                className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-green-500"
+              >
+                {["Fertilizer", "Seed", "Tool", "Machinery", "Livestock", "Other"].map(cat => (
+                  <option key={cat} value={cat}>{cat}</option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+               <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
+               <select
+                 value={formData.isAvailable ? "available" : "unavailable"}
+                 onChange={(e) => setFormData({ ...formData, isAvailable: e.target.value === "available" })}
+                 className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-green-500"
+               >
+                 <option value="available">Available</option>
+                 <option value="unavailable">Unavailable</option>
+               </select>
+            </div>
+
+            <div className="col-span-2">
+              <label className="block text-sm font-medium text-gray-700 mb-1">Image URL</label>
+              <input
+                type="text"
+                required
+                value={formData.image.url}
+                onChange={(e) => setFormData({ ...formData, image: { ...formData.image, url: e.target.value } })}
+                placeholder="https://images.unsplash.com/..."
+                className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-green-500"
+              />
+            </div>
+          </div>
+
+          <div className="flex justify-end gap-3 pt-6 border-t">
+            <button
+              type="button"
+              onClick={onClose}
+              className="px-6 py-2 border rounded-lg hover:bg-gray-50 transition"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              disabled={saving}
+              className="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition disabled:opacity-50"
+            >
+              {saving ? "Saving..." : (product ? "Save Changes" : "Add Product")}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+};
+
 // Course Card Component
 const CourseCard: React.FC<{
   course: Course;
@@ -1743,6 +1963,11 @@ const AdminDashboard = () => {
   const [users, setUsers] = useState<User[]>([]);
   const [enrollments, setEnrollments] = useState<Enrollment[]>([]);
   const [payments, setPayments] = useState<Payment[]>([]);
+  const [products, setProducts] = useState<Product[]>([]);
+  const [orders, setOrders] = useState<Order[]>([]);
+
+  const [showProductModal, setShowProductModal] = useState<boolean>(false);
+  const [editingProduct, setEditingProduct] = useState<Product | null>(null);
 
   const [showCourseModal, setShowCourseModal] = useState<boolean>(false);
   const [editingCourse, setEditingCourse] = useState<Course | null>(null);
@@ -1757,6 +1982,8 @@ const AdminDashboard = () => {
     if (activeTab === "users") loadUsers();
     if (activeTab === "enrollments") loadEnrollments();
     if (activeTab === "payments") loadPayments();
+    if (activeTab === "products") loadProducts();
+    if (activeTab === "orders") loadOrders();
   }, [activeTab]);
 
   const loadInitialData = async () => {
@@ -1810,6 +2037,57 @@ const AdminDashboard = () => {
       setPayments(Array.isArray(data) ? data : []);
     } catch (err) {
       console.error("Failed to load payments:", err);
+    }
+  };
+
+  const loadProducts = async () => {
+    try {
+      const data = await api.getProducts();
+      setProducts(Array.isArray(data) ? data : []);
+    } catch (err) {
+      console.error("Failed to load products:", err);
+    }
+  };
+
+  const loadOrders = async () => {
+    try {
+      const data = await api.getOrders();
+      setOrders(Array.isArray(data) ? data : []);
+    } catch (err) {
+      console.error("Failed to load orders:", err);
+    }
+  };
+
+  const handleCreateProduct = async (formData: any) => {
+    try {
+      await api.createProduct(formData);
+      await loadProducts();
+      alert("Product created successfully!");
+    } catch (err: any) {
+      alert("Failed to create product: " + (err?.message || "Unknown error"));
+      throw err;
+    }
+  };
+
+  const handleUpdateProduct = async (id: string, formData: any) => {
+    try {
+      await api.updateProduct(id, formData);
+      await loadProducts();
+      alert("Product updated successfully!");
+    } catch (err: any) {
+      alert("Failed to update product: " + (err?.message || "Unknown error"));
+      throw err;
+    }
+  };
+
+  const handleDeleteProduct = async (id: string) => {
+    if (!window.confirm("Are you sure you want to delete this product?")) return;
+    try {
+      await api.deleteProduct(id);
+      await loadProducts();
+      alert("Product deleted successfully!");
+    } catch (err: any) {
+      alert("Failed to delete product: " + (err?.message || "Unknown error"));
     }
   };
 
@@ -1889,13 +2167,29 @@ const AdminDashboard = () => {
         .includes(searchTerm.toLowerCase()) ||
       enrollment.courseId?.title?.toLowerCase().includes(searchTerm.toLowerCase())
   );
-
   const filteredPayments = payments.filter(
     (payment) =>
       payment.metadata?.customerName
         ?.toLowerCase()
         .includes(searchTerm.toLowerCase()) ||
       payment.paymentReference?.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  const filteredProducts = products.filter(
+    (product) =>
+      product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      product.category.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      product.description.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  const filteredOrders = orders.filter(
+    (order) =>
+      order.paymentReference?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      `${order.userId?.firstName} ${order.userId?.lastName}`
+        ?.toLowerCase()
+        .includes(searchTerm.toLowerCase()) ||
+      order.shippingAddress.city.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      order.shippingAddress.phoneNumber.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   if (loading) {
@@ -1972,7 +2266,7 @@ const AdminDashboard = () => {
       <div className="bg-white border-b">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <nav className="flex space-x-8">
-            {["overview", "courses", "users", "enrollments", "payments"].map(
+            {["overview", "courses", "users", "enrollments", "payments", "products", "orders"].map(
               (tab) => (
                 <button
                   key={tab}
@@ -2471,6 +2765,166 @@ const AdminDashboard = () => {
             </div>
           </div>
         )}
+
+        {activeTab === "products" && (
+          <div>
+            <div className="flex justify-between items-center mb-6">
+              <div className="relative max-w-md flex-1">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                <input
+                  type="text"
+                  placeholder="Search products..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
+                />
+              </div>
+              <button
+                onClick={() => {
+                  setEditingProduct(null);
+                  setShowProductModal(true);
+                }}
+                className="ml-4 bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 flex items-center gap-2"
+              >
+                <Plus className="w-5 h-5" />
+                Add Product
+              </button>
+            </div>
+
+            <div className="bg-white rounded-lg shadow overflow-hidden">
+              <table className="min-w-full divide-y divide-gray-200">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Product</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Category</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Price</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Stock</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
+                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
+                  {filteredProducts.map((product) => (
+                    <tr key={product._id}>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="flex items-center">
+                          {product.image?.url && (
+                            <img src={product.image.url} alt={product.name} className="w-10 h-10 rounded object-cover mr-3" />
+                          )}
+                          <div className="font-medium text-gray-900">{product.name}</div>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{product.category}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">₦{(product.price || 0).toLocaleString()}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{product.stock}</td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span className={`px-2 py-1 text-xs rounded-full ${product.isAvailable ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
+                          {product.isAvailable ? 'Available' : 'Unavailable'}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                        <button
+                          onClick={() => {
+                            setEditingProduct(product);
+                            setShowProductModal(true);
+                          }}
+                          className="text-blue-600 hover:text-blue-900 mr-3"
+                        >
+                          <Edit2 className="w-5 h-5" />
+                        </button>
+                        <button
+                          onClick={() => handleDeleteProduct(product._id)}
+                          className="text-red-600 hover:text-red-900"
+                        >
+                          <Trash2 className="w-5 h-5" />
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              {filteredProducts.length === 0 && (
+                <div className="text-center py-12">
+                  <Package className="w-12 h-12 text-gray-400 mx-auto mb-3" />
+                  <p className="text-gray-600">No products found</p>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {activeTab === "orders" && (
+          <div>
+            <div className="mb-6">
+              <div className="relative max-w-md">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                <input
+                  type="text"
+                  placeholder="Search orders..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
+                />
+              </div>
+            </div>
+
+            <div className="bg-white rounded-lg shadow overflow-hidden">
+              <table className="min-w-full divide-y divide-gray-200">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Order ID / Ref</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Customer</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Items</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Total</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Date</th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
+                  {filteredOrders.map((order) => (
+                    <tr key={order._id}>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm font-mono text-gray-900">{order.paymentReference}</div>
+                        <div className="text-xs text-gray-500">{order._id}</div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm font-medium text-gray-900">
+                          {order.userId?.firstName} {order.userId?.lastName}
+                        </div>
+                        <div className="text-xs text-gray-500">{order.userId?.email}</div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                        {order.items?.length || 0} item(s)
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                        ₦{(order.totalAmount || 0).toLocaleString()}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="space-y-1">
+                          <span className={`px-2 py-1 text-xs rounded-full block w-fit ${order.paymentStatus === 'paid' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}`}>
+                            {order.paymentStatus}
+                          </span>
+                          <span className={`px-2 py-1 text-xs rounded-full block w-fit ${order.orderStatus === 'delivered' ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 text-gray-800'}`}>
+                            {order.orderStatus}
+                          </span>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                        {new Date(order.createdAt).toLocaleDateString()}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              {filteredOrders.length === 0 && (
+                <div className="text-center py-12">
+                  <ShoppingBag className="w-12 h-12 text-gray-400 mx-auto mb-3" />
+                  <p className="text-gray-600">No orders found</p>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
       </main>
 
       {showCourseModal && (
@@ -2485,6 +2939,23 @@ const AdminDashboard = () => {
               await handleUpdateCourse(editingCourse._id, data);
             } else {
               await handleCreateCourse(data);
+            }
+          }}
+        />
+      )}
+
+      {showProductModal && (
+        <ProductEditorModal
+          product={editingProduct}
+          onClose={() => {
+            setShowProductModal(false);
+            setEditingProduct(null);
+          }}
+          onSave={async (data) => {
+            if (editingProduct) {
+              await handleUpdateProduct(editingProduct._id, data);
+            } else {
+              await handleCreateProduct(data);
             }
           }}
         />

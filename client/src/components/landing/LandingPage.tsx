@@ -423,7 +423,10 @@ export default function PetersAgricultureLanding() {
                   <span>Practical equipment for small and medium farms</span>
                 </div>
               </div>
-              <button className="w-full px-6 py-3 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition font-semibold flex items-center justify-center">
+              <button 
+                onClick={() => navigate("/store")}
+                className="w-full px-6 py-3 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition font-semibold flex items-center justify-center"
+              >
                 Visit Our Store <ShoppingCart className="ml-2" size={20} />
               </button>
             </div>
@@ -707,7 +710,10 @@ export default function PetersAgricultureLanding() {
             <button onClick={() => navigate("/consultation")} className="px-8 py-4 bg-gradient-to-r from-orange-600 to-orange-700 text-white rounded-lg hover:from-orange-700 hover:to-orange-800 transition font-semibold text-lg shadow-xl shadow-orange-200">
               Book a Consultation
             </button>
-            <button className="px-8 py-4 border-2 border-emerald-600 text-emerald-600 rounded-lg hover:bg-emerald-50 transition font-semibold text-lg">
+            <button 
+              onClick={() => navigate("/store")}
+              className="px-8 py-4 border-2 border-emerald-600 text-emerald-600 rounded-lg hover:bg-emerald-50 transition font-semibold text-lg"
+            >
               Shop Agricultural Tools
             </button>
           </div>
