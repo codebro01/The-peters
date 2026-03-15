@@ -55,41 +55,60 @@ const CheckoutPage: React.FC = () => {
       setError(null);
 
       // 1. Create Order on backend
+      console.log("Creating order with data:", {
+        items: cart,
+        shippingAddress,
+        totalAmount: getCartTotal()
+      });
+      
       const order = await storeService.createOrder({
         items: cart,
         shippingAddress,
         totalAmount: getCartTotal()
       });
 
+      console.log("Order created successfully:", order);
+
+      // Check if Paystack is loaded
+      if (!(window as any).PaystackPop) {
+        throw new Error("Paystack payment gateway is not loaded. Please refresh the page or check your internet connection.");
+      }
+
       // 2. Initialize Paystack
       const handler = (window as any).PaystackPop.setup({
         key: process.env.REACT_APP_PAYSTACK_PUBLIC_KEY,
         email: user?.email || "",
-        amount: getCartTotal() * 100, // kobo
+        amount: Math.round(getCartTotal() * 100), // kobo, ensure it's an integer
         ref: order.paymentReference,
         currency: "NGN",
-        callback: async (response: any) => {
+        callback: function (response: any) {
+          console.log("Paystack payment successful:", response);
           // Payment successful in popup
           setIsProcessing(true);
-          try {
-            await storeService.verifyOrderPayment(response.reference);
-            setPaymentSuccess(true);
-            setOrderReference(order.paymentReference);
-            clearCart();
-          } catch (err) {
-            setError("Payment verification failed. Please contact support.");
-          } finally {
-            setIsProcessing(false);
-          }
+          storeService.verifyOrderPayment(response.reference)
+            .then(() => {
+              setPaymentSuccess(true);
+              setOrderReference(order.paymentReference);
+              clearCart();
+            })
+            .catch((err: any) => {
+              console.error("Payment verification error:", err);
+              setError(err.response?.data?.message || "Payment verification failed. Please contact support.");
+            })
+            .finally(() => {
+              setIsProcessing(false);
+            });
         },
-        onClose: () => {
+        onClose: function () {
+          console.log("Paystack popup closed");
           setIsProcessing(false);
         }
       });
 
       handler.openIframe();
     } catch (err: any) {
-      setError(err.response?.data?.message || "Checkout failed. Please try again.");
+      console.error("Checkout process error:", err);
+      setError(err.response?.data?.message || err.message || "Checkout failed. Please try again.");
       setIsProcessing(false);
     }
   };

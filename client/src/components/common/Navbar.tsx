@@ -62,7 +62,7 @@ export default function Navbar() {
 
           {/* CART & AUTH ACTIONS (DESKTOP) */}
           <div className="hidden lg:flex items-center space-x-6">
-            <Link to="/store" className="relative text-gray-700 hover:text-emerald-600 transition">
+            <Link to="/checkout" className="relative text-gray-700 hover:text-emerald-600 transition">
               <ShoppingBag size={24} />
               {cartCount > 0 && (
                 <span className="absolute -top-2 -right-2 bg-emerald-600 text-white text-[10px] font-bold h-5 w-5 rounded-full flex items-center justify-center">
@@ -106,7 +106,7 @@ export default function Navbar() {
 
         {/* MOBILE ACTIONS */}
           <div className="flex lg:hidden items-center space-x-4">
-            <Link to="/store" className="relative text-gray-700">
+            <Link to="/checkout" className="relative text-gray-700">
               <ShoppingBag size={24} />
               {cartCount > 0 && (
                 <span className="absolute -top-2 -right-2 bg-emerald-600 text-white text-[10px] font-bold h-4 w-4 rounded-full flex items-center justify-center">

@@ -1,4 +1,5 @@
 import { Request, Response } from "express";
+import mongoose from "mongoose";
 import Product from "../models/Product";
 import Order from "../models/Order";
 import axios from "axios";
@@ -106,6 +107,13 @@ export const createOrder = async (req: Request, res: Response): Promise<void> =>
     // Verify stock and calculate total just to be safe
     let calculatedTotal = 0;
     for (const item of items) {
+      if (!mongoose.Types.ObjectId.isValid(item.productId)) {
+        res.status(400).json({
+          success: false,
+          message: `Invalid product ID: ${item.productId}`,
+        });
+        return;
+      }
       const product = await Product.findById(item.productId);
       if (!product) {
         res.status(404).json({
@@ -145,6 +153,7 @@ export const createOrder = async (req: Request, res: Response): Promise<void> =>
       message: "Order created successfully",
     });
   } catch (error: any) {
+    console.error("CREATE ORDER ERROR:", error);
     res.status(500).json({
       success: false,
       message: "Failed to create order",
