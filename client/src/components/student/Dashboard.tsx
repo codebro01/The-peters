@@ -186,7 +186,7 @@ export default function StudentDashboard() {
               Continue your learning journey. You're making great progress!
             </p>
           </div>
-          <Link to="/" className="mt-4 md:mt-0 inline-flex items-center px-4 py-2 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 font-medium rounded-lg transition border border-emerald-200">
+          <Link to="/courses" className="mt-4 md:mt-0 inline-flex items-center px-4 py-2 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 font-medium rounded-lg transition border border-emerald-200">
             <BookOpen className="w-4 h-4 mr-2" /> Discover More Courses
           </Link>
         </div>

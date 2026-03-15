@@ -21,6 +21,7 @@ import {
   ArrowRight,
   Star,
 } from "lucide-react";
+import { useAuth } from "../../hooks/useAuth";
 // Import images from assets folder
 import farmImage from "../../assets/images/FarmThePeters.jpeg";
 import Training from "../../assets/images/Class.png";
@@ -35,6 +36,7 @@ import logo from "../../assets/images/THE PETERS LOGO.png";
 
 export default function PetersAgricultureLanding() {
   const navigate = useNavigate();
+  const { isAuthenticated } = useAuth();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
 
@@ -117,8 +119,11 @@ export default function PetersAgricultureLanding() {
                 grow profitable agricultural businesses in Nigeria.
               </p>
               <div className="flex flex-wrap gap-4">
-                <button className="px-8 py-4 bg-gradient-to-r from-emerald-600 to-emerald-700 text-white rounded-lg hover:from-emerald-700 hover:to-emerald-800 transition flex items-center font-semibold text-lg shadow-xl shadow-emerald-200">
-                  Get Started <ChevronRight className="ml-2" size={24} />
+                <button 
+                  onClick={() => navigate(isAuthenticated ? "/dashboard" : "/register")}
+                  className="px-8 py-4 bg-gradient-to-r from-emerald-600 to-emerald-700 text-white rounded-lg hover:from-emerald-700 hover:to-emerald-800 transition flex items-center font-semibold text-lg shadow-xl shadow-emerald-200"
+                >
+                  {isAuthenticated ? "Dashboard" : "Get Started"} <ChevronRight className="ml-2" size={24} />
                 </button>
                 <button onClick={() => navigate("/consultation")} className="px-8 py-4 border-2 border-orange-600 text-orange-600 rounded-lg hover:bg-orange-50 transition font-semibold text-lg">
                   Book a Consultation
@@ -702,10 +707,10 @@ export default function PetersAgricultureLanding() {
           </p>
           <div className="flex flex-wrap justify-center gap-4">
             <button
-              onClick={() => navigate("/courses")}
+              onClick={() => navigate(isAuthenticated ? "/dashboard" : "/courses")}
               className="px-8 py-4 bg-gradient-to-r from-emerald-600 to-emerald-700 text-white rounded-lg hover:from-emerald-700 hover:to-emerald-800 transition font-semibold text-lg shadow-xl shadow-emerald-200"
             >
-              Start Learning Today
+              {isAuthenticated ? "Go to Dashboard" : "Start Learning Today"}
             </button>
             <button onClick={() => navigate("/consultation")} className="px-8 py-4 bg-gradient-to-r from-orange-600 to-orange-700 text-white rounded-lg hover:from-orange-700 hover:to-orange-800 transition font-semibold text-lg shadow-xl shadow-orange-200">
               Book a Consultation
