@@ -43,16 +43,16 @@ export default function Navbar() {
             <Link to="/" className="nav-link">
               Home
             </Link>
-            <a href="#about" className="nav-link">
+            <a href="/#about" className="nav-link">
               About
             </a>
-            <a href="#services" className="nav-link">
+            <a href="/#services" className="nav-link">
               Services
             </a>
             <Link to="/courses" className="nav-link">
               Courses
             </Link>
-            <a href="#contact" className="nav-link">
+            <a href="/#contact" className="nav-link">
               Contact
             </a>
             <Link to="/store" className="nav-link flex items-center gap-1">
@@ -130,16 +130,16 @@ export default function Navbar() {
             <Link to="/" className="mobile-link">
               Home
             </Link>
-            <a href="#about" className="mobile-link">
+            <a href="/#about" className="mobile-link">
               About
             </a>
-            <a href="#services" className="mobile-link">
+            <a href="/#services" className="mobile-link">
               Services
             </a>
             <Link to="/courses" className="mobile-link">
               Courses
             </Link>
-            <a href="#contact" className="mobile-link">
+            <a href="/#contact" className="mobile-link">
               Contact
             </a>
 

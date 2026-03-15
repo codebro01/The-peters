@@ -68,6 +68,22 @@ export default function LMSCourseCatalog() {
 
   const filteredCourses = courses;
 
+  const getCourseThumbnail = (course: Course) => {
+    if (course.thumbnail?.url) return course.thumbnail.url;
+
+    // Fallback to first video lesson thumbnail
+    for (const mod of course.modules || []) {
+      for (const lesson of mod.lessons || []) {
+        if (lesson.content?.video?.thumbnail) {
+          return lesson.content.video.thumbnail;
+        }
+      }
+    }
+
+    // Ultimate fallback
+    return "https://images.unsplash.com/photo-1592982537447-6f2a6a0a38f3?q=80&w=1000&auto=format&fit=crop";
+  };
+
   const getPreviewVideoUrl = (course: Course) => {
     // Use course previewVideo if uploaded, else a placeholder
     if (course.previewVideo?.url) return course.previewVideo.url;
@@ -120,7 +136,7 @@ export default function LMSCourseCatalog() {
                 controls
                 autoPlay
                 controlsList="nodownload"
-                poster={previewCourse.thumbnail?.url}
+                poster={getCourseThumbnail(previewCourse)}
                 src={getPreviewVideoUrl(previewCourse)}
               >
                 Your browser does not support the video tag.
@@ -276,7 +292,7 @@ export default function LMSCourseCatalog() {
                   {/* THUMBNAIL */}
                   <div className="relative h-48 overflow-hidden rounded-t-xl">
                     <img
-                      src={course.thumbnail?.url || "https://images.unsplash.com/photo-1592982537447-6f2a6a0a38f3?q=80&w=1000&auto=format&fit=crop"}
+                      src={getCourseThumbnail(course)}
                       alt={course.title}
                       className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
                     />

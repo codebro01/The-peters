@@ -200,6 +200,22 @@ export default function CourseDetailPage() {
     }, 0);
   };
 
+  const getCourseThumbnail = (course: Course) => {
+    if (course.thumbnail?.url) return course.thumbnail.url;
+
+    // Fallback to first video lesson thumbnail
+    for (const mod of course.modules || []) {
+      for (const lesson of mod.lessons || []) {
+        if (lesson.content?.video?.thumbnail) {
+          return lesson.content.video.thumbnail;
+        }
+      }
+    }
+
+    // Ultimate fallback
+    return "https://images.unsplash.com/photo-1592982537447-6f2a6a0a38f3?q=80&w=1000&auto=format&fit=crop";
+  };
+
   // Loading state
   if (isLoading) {
     return (
@@ -265,7 +281,7 @@ export default function CourseDetailPage() {
                 controls
                 autoPlay
                 controlsList="nodownload"
-                poster={course.thumbnail?.url}
+                poster={getCourseThumbnail(course)}
                 src={(() => {
                   // Find the lesson's video URL, fallback to placeholder
                   const mod = course.modules.find(
@@ -391,7 +407,7 @@ export default function CourseDetailPage() {
               <div className="bg-white rounded-xl shadow-2xl overflow-hidden sticky top-4">
                 <div className="aspect-video relative">
                   <img
-                    src={course.thumbnail?.url || "https://images.unsplash.com/photo-1592982537447-6f2a6a0a38f3?q=80&w=1000&auto=format&fit=crop"}
+                    src={getCourseThumbnail(course)}
                     alt={course.title}
                     className="w-full h-full object-cover"
                   />
