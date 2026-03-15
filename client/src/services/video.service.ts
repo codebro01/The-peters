@@ -78,6 +78,23 @@ class VideoService {
     );
     return response.data;
   }
+
+  // Upload thumbnail for a lesson
+  async uploadThumbnail(
+    courseId: string,
+    moduleId: string,
+    lessonId: string,
+    thumbnailFile: File,
+  ) {
+    const formData = new FormData();
+    formData.append("thumbnail", thumbnailFile);
+
+    const response = await uploadApi.post(
+      `/videos/upload-thumbnail/${courseId}/${moduleId}/${lessonId}`,
+      formData,
+    );
+    return response.data;
+  }
 }
 
 // Export as default instance

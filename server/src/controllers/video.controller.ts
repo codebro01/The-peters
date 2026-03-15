@@ -62,6 +62,26 @@ const documentUpload = multer({
   },
 });
 
+// Configure multer for image upload (thumbnails)
+const imageUpload = multer({
+  storage,
+  limits: {
+    fileSize: 5 * 1024 * 1024, // 5MB limit for thumbnails
+  },
+  fileFilter: (req, file, cb) => {
+    const allowedMimeTypes = ["image/jpeg", "image/png", "image/webp", "image/gif"];
+    if (allowedMimeTypes.includes(file.mimetype)) {
+      cb(null, true);
+    } else {
+      cb(
+        new Error(
+          `Unsupported file type: ${file.mimetype}. Only image files are allowed.`
+        )
+      );
+    }
+  },
+});
+
 // @desc    Upload PDF document to Cloudinary and add to lesson
 // @route   POST /api/videos/upload-document/:courseId/:moduleId/:lessonId
 // @access  Private/Admin
@@ -720,6 +740,92 @@ export const generateThumbnail = async (req: Request, res: Response) => {
     });
   }
 };
+
+// @desc    Upload thumbnail to lesson
+// @route   POST /api/videos/placeholder-thumbnail/:courseId/:moduleId/:lessonId
+// @access  Private/Admin
+export const uploadThumbnailToLesson = [
+  imageUpload.single("thumbnail"),
+  async (req: Request, res: Response) => {
+    try {
+      const { courseId, moduleId, lessonId } = req.params;
+
+      if (!req.file) {
+        return res.status(400).json({
+          success: false,
+          message: "No thumbnail file provided",
+        });
+      }
+
+      // Find the course
+      const course = await Course.findById(courseId);
+      if (!course) {
+        return res.status(404).json({
+          success: false,
+          message: "Course not found",
+        });
+      }
+
+      // Find the module
+      const module = course.modules.find((m: any) => m.id === moduleId || (m.toObject && m.toObject().id === moduleId));
+      if (!module) {
+        return res.status(404).json({
+          success: false,
+          message: "Module not found",
+        });
+      }
+
+      // Find the lesson
+      const lesson = module.lessons.find((l: any) => l.id === lessonId || (l.toObject && l.toObject().id === lessonId));
+      if (!lesson) {
+        return res.status(404).json({
+          success: false,
+          message: "Lesson not found",
+        });
+      }
+
+      // Generate unique filename
+      const timestamp = Date.now();
+      const fileName = `thumbnail-${lessonId}-${timestamp}`;
+
+      // Upload image to Cloudinary
+      const uploadResult: any = await CloudinaryService.uploadImage(
+        req.file.buffer,
+        fileName,
+        `courses/${courseId}/thumbnails`
+      );
+
+      // Update lesson with thumbnail URL
+      if (!lesson.content.video) {
+        lesson.content.video = {
+           url: "",
+           publicId: "",
+           duration: 0,
+        };
+      }
+      
+      lesson.content.video.thumbnail = uploadResult.secure_url;
+
+      // Save the course
+      await course.save();
+
+      res.status(200).json({
+        success: true,
+        data: {
+          thumbnailUrl: uploadResult.secure_url,
+          lessonId: lesson.id,
+        },
+        message: "Thumbnail uploaded successfully",
+      });
+    } catch (error: any) {
+      console.error("Thumbnail upload error:", error);
+      res.status(500).json({
+        success: false,
+        message: error.message || "Failed to upload thumbnail",
+      });
+    }
+  },
+];
 
 // @desc    Batch update video lessons
 // @route   PUT /api/videos/batch-update/:courseId

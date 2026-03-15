@@ -151,6 +151,8 @@ const CourseSchema = new Schema<ICourse>(
                 url: String,
                 publicId: String,
                 duration: Number,
+                thumbnail: String,
+                format: String,
               },
               document: {
                 url: String,

@@ -438,6 +438,42 @@ const api = {
       xhr.send(formData);
     });
   },
+
+  uploadThumbnail: (
+    file: File,
+    courseId: string,
+    moduleId: string,
+    lessonId: string
+  ): Promise<any> => {
+    return new Promise((resolve, reject) => {
+      const formData = new FormData();
+      formData.append("thumbnail", file);
+      const token = localStorage.getItem("token");
+
+      const xhr = new XMLHttpRequest();
+      xhr.open("POST", `${API_BASE_URL}/videos/upload-thumbnail/${courseId}/${moduleId}/${lessonId}`);
+
+      if (token) {
+        xhr.setRequestHeader("Authorization", `Bearer ${token}`);
+      }
+
+      xhr.onload = () => {
+        try {
+          const data = JSON.parse(xhr.responseText);
+          if (xhr.status >= 200 && xhr.status < 300 && data.success) {
+            resolve(data.data);
+          } else {
+            reject(new Error(data.message || "Upload failed"));
+          }
+        } catch {
+          reject(new Error("Failed to parse server response"));
+        }
+      };
+
+      xhr.onerror = () => reject(new Error("Network error during upload"));
+      xhr.send(formData);
+    });
+  },
 };
 
 // Document Uploader Component
@@ -624,6 +660,42 @@ const VideoUploader: React.FC<{
   const [progress, setProgress] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [thumbnailUploading, setThumbnailUploading] = useState(false);
+
+  const handleThumbnailSelect = async (e: ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith("image/")) {
+      setError("Please upload a valid image file");
+      return;
+    }
+
+    setThumbnailUploading(true);
+    setError(null);
+    try {
+      const result = await api.uploadThumbnail(
+        file,
+        courseId,
+        moduleId,
+        lessonId
+      );
+      
+      if (existingVideo) {
+        onUploadComplete({
+          ...existingVideo,
+          thumbnail: result.thumbnailUrl
+        } as any);
+      }
+      
+      alert("Thumbnail uploaded successfully");
+    } catch (err: any) {
+      setError(err.message || "Thumbnail upload failed");
+    } finally {
+      setThumbnailUploading(false);
+      e.target.value = "";
+    }
+  };
 
   const handleFileSelect = async (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -763,6 +835,35 @@ const VideoUploader: React.FC<{
               className="hidden"
             />
           </label>
+
+          <div className="mt-4 border-t pt-4">
+            <h5 className="text-sm font-medium text-gray-700 mb-2">Lesson Thumbnail</h5>
+            <div className="flex items-center gap-4">
+              <div className="w-24 h-16 bg-gray-100 rounded border flex items-center justify-center overflow-hidden">
+                {existingVideo.thumbnail ? (
+                  <img src={existingVideo.thumbnail} alt="Thumbnail" className="w-full h-full object-cover" />
+                ) : (
+                  <Package className="w-8 h-8 text-gray-300" />
+                )}
+              </div>
+              <div className="flex-1">
+                <p className="text-xs text-gray-500 mb-2">
+                  Upload a custom thumbnail for this video lesson.
+                </p>
+                <label className={`inline-flex items-center gap-2 px-3 py-1.5 text-xs font-medium rounded-md border border-gray-300 bg-white hover:bg-gray-50 cursor-pointer ${thumbnailUploading ? 'opacity-50 cursor-not-allowed' : ''}`}>
+                  <Upload className="w-3.5 h-3.5" />
+                  {thumbnailUploading ? 'Uploading...' : 'Upload Thumbnail'}
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={handleThumbnailSelect}
+                    disabled={thumbnailUploading}
+                    className="hidden"
+                  />
+                </label>
+              </div>
+            </div>
+          </div>
         </div>
       ) : (
         <>

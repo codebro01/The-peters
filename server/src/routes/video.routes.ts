@@ -8,6 +8,7 @@ import {
   deleteVideo,
   getVideoAnalytics,
   generateThumbnail,
+  uploadThumbnailToLesson,
   batchUpdateVideoLessons,
   getUploadProgress,
 } from "../controllers/video.controller";
@@ -69,6 +70,13 @@ router.post(
   "/thumbnail/:courseId/:moduleId/:lessonId",
   authorize("admin", "instructor"),
   generateThumbnail
+);
+
+// Upload thumbnail to lesson (Admin/Instructor only)
+router.post(
+  "/upload-thumbnail/:courseId/:moduleId/:lessonId",
+  authorize("admin", "instructor"),
+  uploadThumbnailToLesson
 );
 
 // Batch update video lessons (Admin/Instructor only)
