@@ -59,7 +59,7 @@ const VideoUploadModal: React.FC<VideoUploadModalProps> = ({
     try {
       const token = localStorage.getItem("token");
       const response = await axios.post(
-        `http://localhost:5000/api/videos/upload/${courseId}/${moduleId}/${lessonId}`,
+        `https://the-peters.onrender.com/api/videos/upload/${courseId}/${moduleId}/${lessonId}`,
         formData,
         {
           headers: {
