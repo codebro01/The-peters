@@ -29,7 +29,7 @@ import {
   Phone
 } from "lucide-react";
 
-const API_BASE_URL = "https://the-peters.onrender.com/api";
+const API_BASE_URL = process.env.REACT_APP_ENV === 'development' ? "http://localhost:5000/api" : "https://the-peters.onrender.com/api";
 
 interface CloudinaryUploadResult {
   public_id: string;

@@ -20,6 +20,7 @@ import {
   UserCheck,
   ArrowRight,
   Star,
+  Play,
 } from "lucide-react";
 import { useAuth } from "../../hooks/useAuth";
 // Import images from assets folder
@@ -33,12 +34,20 @@ import Agrofuture from "../../assets/images/Agrifuture.jpeg";
 import Cucumber from "../../assets/images/Cocumber Farming.jpeg";
 import snail from "../../assets/images/Snail Farming.jpeg";
 import logo from "../../assets/images/THE PETERS LOGO.png";
+import { Course } from "../../types";
+import courseService from "../../services/course.service";
 
 export default function PetersAgricultureLanding() {
   const navigate = useNavigate();
   const { isAuthenticated } = useAuth();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
+  const [fetchedCourses, setFetchedCourses] = useState<Course[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [isPreviewOpen, setIsPreviewOpen] = useState(false);
+  const [previewVideoUrl, setPreviewVideoUrl] = useState<string | null>(null);
+  const [previewTitle, setPreviewTitle] = useState("");
 
   useEffect(() => {
     const handleScroll = () => {
@@ -48,47 +57,69 @@ export default function PetersAgricultureLanding() {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
-  const courses = [
-    {
-      title: "AgriStart Nigeria",
-      description:
-        "A practical guide for beginners starting agriculture with little or no capital.",
-      level: "Beginner",
-      color: "emerald",
-      image: Agristart,
-    },
-    {
-      title: "AgroMastery Nigeria",
-      description:
-        "Advanced training on irrigation, soil fertility, and agricultural policy.",
-      level: "Advanced",
-      color: "orange",
-      image: Agromastery,
-    },
-    {
-      title: "AgriFuture Nigeria",
-      description:
-        "Sustainable and climate-smart agricultural practices for a changing Nigeria.",
-      level: "Intermediate",
-      color: "emerald",
-      image: Agrofuture,
-    },
-    {
-      title: "Cucumber Mastery Nigeria (A–Z)",
-      description: "Complete open-field and greenhouse cucumber farming.",
-      level: "All Levels",
-      color: "orange",
-      image: Cucumber,
-    },
-    {
-      title: "Snail Farming Mastery Nigeria (A–Z)",
-      description:
-        "Low-capital, high-demand snail farming from start to scale.",
-      level: "All Levels",
-      color: "emerald",
-      image: snail,
-    },
-  ];
+  useEffect(() => {
+    const fetchFeaturedCourses = async () => {
+      try {
+        setLoading(true);
+        // Fetch courses, maybe limit to 6 for featured
+        const data = await courseService.getAllCourses();
+        // Just take the first 6 for the home screen
+        setFetchedCourses(data.slice(0, 6));
+        setError(null);
+      } catch (err: any) {
+        console.error("Error fetching courses:", err);
+        setError("Failed to load courses. Please try again later.");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchFeaturedCourses();
+  }, []);
+
+  // Helper to determine color based on course level or index
+  const getCourseColor = (level: string, index: number) => {
+    if (level === "Beginner" || level === "Intermediate") return "emerald";
+    if (level === "Advanced") return "orange";
+    return index % 2 === 0 ? "emerald" : "orange";
+  };
+
+  const openPreview = (course: Course) => {
+    // Find first video lesson
+    let videoUrl = course.previewVideo?.url;
+    
+    if (!videoUrl) {
+      for (const module of course.modules) {
+        for (const lesson of module.lessons) {
+          if (lesson.type === "video" && lesson.content?.video?.url) {
+            videoUrl = lesson.content.video.url;
+            break;
+          }
+        }
+        if (videoUrl) break;
+      }
+    }
+
+    if (videoUrl) {
+      setPreviewVideoUrl(videoUrl);
+      setPreviewTitle(course.title);
+      setIsPreviewOpen(true);
+    } else {
+      alert("No preview video available for this course.");
+    }
+  };
+
+  const getThumbnail = (course: Course) => {
+    // Try to find first video thumbnail
+    for (const module of course.modules) {
+      for (const lesson of module.lessons) {
+        if (lesson.type === "video" && lesson.content?.video?.thumbnail) {
+          return lesson.content.video.thumbnail;
+        }
+      }
+    }
+    return course.thumbnail?.url || Cucumber;
+  };
 
   return (
     <div className="min-h-screen bg-white">
@@ -455,44 +486,96 @@ export default function PetersAgricultureLanding() {
           </div>
 
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {courses.map((course, index) => (
-              <div
-                key={index}
-                className="bg-white rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl transition group"
-              >
-                <div className="h-48 overflow-hidden">
-                  <img
-                    src={course.image}
-                    alt={course.title}
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                  />
-                </div>
-                <div className="p-6">
-                  <div
-                    className={`inline-block px-3 py-1 ${
-                      course.color === "emerald"
-                        ? "bg-emerald-100 text-emerald-700"
-                        : "bg-orange-100 text-orange-700"
-                    } rounded-full text-xs font-semibold mb-3`}
-                  >
-                    {course.level}
+            {loading ? (
+              // Loading skeletons
+              [1, 2, 3].map((i) => (
+                <div key={i} className="bg-white rounded-2xl overflow-hidden shadow-lg animate-pulse">
+                  <div className="h-48 bg-gray-200"></div>
+                  <div className="p-6 space-y-4">
+                    <div className="h-4 bg-gray-200 rounded w-1/4"></div>
+                    <div className="h-6 bg-gray-200 rounded w-3/4"></div>
+                    <div className="h-4 bg-gray-200 rounded w-full"></div>
+                    <div className="h-10 bg-gray-200 rounded w-full"></div>
                   </div>
-                  <h3 className="text-xl font-bold text-gray-900 mb-3">
-                    {course.title}
-                  </h3>
-                  <p className="text-gray-600 mb-4">{course.description}</p>
-                  <button
-                    className={`w-full px-4 py-3 ${
-                      course.color === "emerald"
-                        ? "bg-emerald-600 hover:bg-emerald-700"
-                        : "bg-orange-600 hover:bg-orange-700"
-                    } text-white rounded-lg transition font-semibold`}
-                  >
-                    Learn More
-                  </button>
                 </div>
+              ))
+            ) : error ? (
+              <div className="col-span-full text-center py-10">
+                <p className="text-red-500 mb-4">{error}</p>
+                <button 
+                  onClick={() => window.location.reload()}
+                  className="px-6 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition"
+                >
+                  Retry
+                </button>
               </div>
-            ))}
+            ) : fetchedCourses.length > 0 ? (
+              fetchedCourses.map((course, index) => {
+                const color = getCourseColor(course.level, index);
+                return (
+                  <div
+                    key={course._id}
+                    className="bg-white rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl transition group relative"
+                  >
+                    <div className="h-48 overflow-hidden relative">
+                      <img
+                        src={getThumbnail(course)}
+                        alt={course.title}
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                      />
+                      {/* Play Overlay */}
+                      <div 
+                        onClick={() => openPreview(course)}
+                        className="absolute inset-0 bg-black/20 group-hover:bg-black/40 transition-colors flex items-center justify-center cursor-pointer"
+                      >
+                        <div className="w-12 h-12 bg-white/90 rounded-full flex items-center justify-center translate-y-4 group-hover:translate-y-0 opacity-0 group-hover:opacity-100 transition-all duration-300 shadow-lg">
+                          <Play className="text-emerald-600 fill-emerald-600" size={24} />
+                        </div>
+                      </div>
+                    </div>
+                    <div className="p-6">
+                      <div className="flex justify-between items-start mb-3">
+                        <div
+                          className={`inline-block px-3 py-1 ${
+                            color === "emerald"
+                              ? "bg-emerald-100 text-emerald-700"
+                              : "bg-orange-100 text-orange-700"
+                          } rounded-full text-xs font-semibold`}
+                        >
+                          {course.level}
+                        </div>
+                        <button 
+                          onClick={() => openPreview(course)}
+                          className="text-emerald-600 hover:text-emerald-700 text-xs font-bold flex items-center gap-1 transition-colors"
+                        >
+                          <Play size={14} className="fill-emerald-600" /> PREVIEW
+                        </button>
+                      </div>
+                      <h3 className="text-xl font-bold text-gray-900 mb-2">
+                        {course.title}
+                      </h3>
+                      <p className="text-gray-600 mb-6 line-clamp-2 text-sm">
+                        {course.subtitle || course.description}
+                      </p>
+                      <button
+                        onClick={() => navigate(`/courses/${course.slug}`)}
+                        className={`w-full px-4 py-3 ${
+                          color === "emerald"
+                            ? "bg-emerald-600 hover:bg-emerald-700"
+                            : "bg-orange-600 hover:bg-orange-700"
+                        } text-white rounded-lg transition-all font-semibold flex items-center justify-center gap-2`}
+                      >
+                        Learn More <ChevronRight size={18} />
+                      </button>
+                    </div>
+                  </div>
+                );
+              })
+            ) : (
+              <div className="col-span-full text-center py-10">
+                <p className="text-gray-600">No courses available at the moment.</p>
+              </div>
+            )}
           </div>
 
           <div className="text-center mt-12">
@@ -889,6 +972,44 @@ export default function PetersAgricultureLanding() {
           </div>
         </div>
       </footer>
+
+      {/* Video Preview Modal */}
+      {isPreviewOpen && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/90 backdrop-blur-sm animate-in fade-in duration-300">
+          <div className="relative w-full max-w-5xl aspect-video bg-black rounded-2xl overflow-hidden shadow-2xl ring-1 ring-white/10">
+            <button
+              onClick={() => {
+                setIsPreviewOpen(false);
+                setPreviewVideoUrl(null);
+              }}
+              className="absolute top-4 right-4 z-10 p-2 bg-black/50 text-white rounded-full hover:bg-black/80 transition-colors"
+            >
+              <X size={24} />
+            </button>
+            <div className="absolute top-4 left-4 z-10 px-4 py-2 bg-black/50 text-white rounded-lg backdrop-blur-md">
+              <p className="font-semibold">{previewTitle} - Preview</p>
+            </div>
+            {previewVideoUrl && (
+              <video
+                src={previewVideoUrl}
+                controls
+                autoPlay
+                className="w-full h-full"
+                onEnded={() => setIsPreviewOpen(false)}
+              >
+                Your browser does not support the video tag.
+              </video>
+            )}
+          </div>
+          <div 
+            className="absolute inset-0 -z-10" 
+            onClick={() => {
+              setIsPreviewOpen(false);
+              setPreviewVideoUrl(null);
+            }}
+          />
+        </div>
+      )}
     </div>
   );
 }
